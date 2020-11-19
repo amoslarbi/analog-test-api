@@ -8,6 +8,6 @@ deploy_staging:
     name: staging
     url: app.oballot.com
   script:
-   - sshpass -p "sshdevOballot123X" ssh -o StrictHostKeyChecking=no dev@oballot.com "cd code-base/oballot-api && git pull origin master && npm install && pm2 restart server && cowsay Landing page updated"
+   - sshpass -p "sshdevOballot123X" ssh -o StrictHostKeyChecking=no dev@oballot.com "cd code-base/oballot-api && git pull origin master && npm install && pm2 restart api_server && cowsay Landing page updated"
   only:
     - master
