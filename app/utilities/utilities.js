@@ -1,7 +1,25 @@
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const { v4: uuidv4 } = require('uuid');
+var postmark = require("postmark");
+var fromEmail = "hello@oballot.com";
+var productUrl = "https://oballot.com";
 
+// Send an email:
+const client = new postmark.ServerClient("7cecfd87-1ba1-4f89-9ef3-0b902e484429");
+
+const sendRegisterationEmail = (to_email, name, link) => {
+    client.sendEmailWithTemplate({
+        "From": fromEmail,
+        "To": to_email,
+        "TemplateAlias": "sendRegistrationEmail",
+        "TemplateModel": {
+            "product_url": productUrl,
+            "name": name,
+            "action_url": link
+        }
+      });
+}
 
 const validatePhoneNumber = phone_number => {
   // const regex = /^[+]*[(]{0,1}[0-9]{1,3}[)]{0,1}[-\s\./0-9]*$/g;
@@ -93,4 +111,5 @@ module.exports = {
   validateEmail,
   sendMessageToTelegram,
   trim,
+  sendRegisterationEmail,
 }
