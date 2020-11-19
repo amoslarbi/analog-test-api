@@ -32,17 +32,17 @@ const sessionChecker = (req, res, next) => {
       if(error){
         return res.status(401).json({
           status: 401,
-          message: "Invalid login credentials"
+          message: "authentication invalid"
         });
       }
 
-      req.token = data.access_data;
+      req.uuid = data.access_data.uuid;
       next();
     })
   }else{
     return res.status(401).json({
       status: 401,
-      message: "Invalid login credentials"
+      message: "authentication invalid"
     });
   }  
 };

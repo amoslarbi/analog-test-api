@@ -11,7 +11,7 @@ const PREFIX = "/client";
 const routes = (app, sessionChecker) => {
 
   app.post(PREFIX+'/create-election', sessionChecker, async (req, res) => {
-
+    const uuid = req.uuid;
   });
 
 }

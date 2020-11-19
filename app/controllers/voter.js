@@ -11,7 +11,7 @@ const PREFIX = "/voter";
 const routes = (app, sessionChecker) => {
 
   app.post(PREFIX+'/cast-vote', sessionChecker, async (req, res) => {
-    
+    const uuid = req.uuid;
   });
 
 }
