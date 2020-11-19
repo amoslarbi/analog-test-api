@@ -1,0 +1,13 @@
+before_script:
+  - apt-get update -qq
+  - apt-get install ssh -y -qq
+  - apt-get install sshpass -y -qq
+deploy_staging:
+  type: deploy
+  environment:
+    name: staging
+    url: app.oballot.com
+  script:
+   - sshpass -p "sshdevOballot123X" ssh -o StrictHostKeyChecking=no dev@oballot.com "cd code-base/oballot-api && git pull origin master && npm install && pm2 restart server && cowsay Landing page updated"
+  only:
+    - master
