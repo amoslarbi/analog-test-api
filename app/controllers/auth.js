@@ -33,7 +33,6 @@ const routes = (app) => {
     let country = trim(req.body.country);
     let email = trim(req.body.email);
     let password = trim(req.body.password);
-    console.log(email);
     let uuid = uuidv5(email, uuidv4());
     let hash = uuidv5(email, uuidv4());
     let passwordHash = hashPassword(password);
@@ -97,7 +96,9 @@ const routes = (app) => {
       });
     }
 
-      sendRegisterationEmail(email, fullName, hash);
+    let action_url = "http://localhost:3000/email-verification/" + hash
+
+      sendRegisterationEmail(email, fullName, action_url);
       return res.status(200).json({
         status: 200,
         message: "worked"
