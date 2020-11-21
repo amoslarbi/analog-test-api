@@ -1,7 +1,7 @@
 const mysql_db = require('../database/connection');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4, v5: uuidv5 } = require('uuid');
 const {
   trim,
   validateEmail,
@@ -22,14 +22,15 @@ const routes = (app) => {
 
   // Register and Send activation email
   // app.post(PREFIX+'/register', async (req, res) => {
-    
   // });
 
-  app.post('/register', async function(req, res){
+  app.post(PREFIX + '/register', async function(req, res){
+
     let fullName = trim(req.body.fullName);
     let country = trim(req.body.country);
     let email = trim(req.body.email);
     let password = trim(req.body.password);
+    console.log(email);
     let uuid = uuidv5(email, uuidv4());
     let hash = uuidv5(email, uuidv4());
     let passwordHash = hashPassword(password);
