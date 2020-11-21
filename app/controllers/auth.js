@@ -1,4 +1,4 @@
-const mysql_db = require('../database/connection');
+const db = require('../database/connection');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
@@ -9,6 +9,9 @@ const {
   checkPassword,
   hashPassword,
   sendMessageToTelegram
+} = require('../utilities/utilities');
+const {
+  sendRegisterationEmail,
 } = require('../utilities/utilities');
 
 const PREFIX = "/auth";
@@ -82,10 +85,10 @@ const routes = (app) => {
       });
     }
 
-    let signUpQuery = "INSERT INTO users (`uuid`, `fullName`, `email`, `country`, `password`, `hash`, `createdAt`, `accountType`, `accountStatus`) VALUES(?, ?, ?, ?, ?, NOW(), ?, ?)";
+    let signUpQuery = "INSERT INTO users (`uuid`, `fullName`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `account_status`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW())";
     let signUp;
     try{
-      [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "Pending"]);
+      [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "EC", "Pending"]);
     }catch(error){
       console.log('SQL-Error: '+error);
       return res.status(500).json({
