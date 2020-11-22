@@ -23,9 +23,55 @@ const routes = (app) => {
 
   });
 
-  // Register and Send activation email
-  // app.post(PREFIX+'/register', async (req, res) => {
-  // });
+  // verify email token
+  app.post(PREFIX+'/verify-token', async function(req, res) {
+    
+    let token = trim(req.body.token);
+    let tokenOkay = 1;
+    let tokenNotOkay = 0;
+
+    let checkTokenQuery = "SELECT * FROM users WHERE email_verification_code = ? AND account_status = ?";
+    let checkToken;
+    try{
+      [checkToken] = await db.execute(checkTokenQuery, [ token, tokenNotOkay ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (checkToken.length == 1) {
+
+      let changeTokenStatusQuery = "UPDATE users SET account_status = ? WHERE email_verification_code = ?";
+      let changeTokenStatus;
+      try{
+        [changeTokenStatus] = await db.execute(changeTokenStatusQuery, [ tokenOkay, token ]);
+      }catch(error){
+        console.log('SQL-Error: '+error);
+        return res.status(500).json({
+          status: 500,
+          message: 'Could not connect to server'
+        });
+      }
+
+      return res.status(200).json({
+        status: 200,
+        message: "worked"
+      });
+
+    }
+    else{
+
+      return res.status(200).json({
+        status: 200,
+        message: "failed"
+      });
+
+    }
+
+  });
 
   app.post(PREFIX + '/register', async function(req, res){
 
