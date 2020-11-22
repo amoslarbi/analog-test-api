@@ -23,7 +23,60 @@ const routes = (app) => {
 
   });
 
-  // verify email token
+    // forgot password start
+    app.post(PREFIX+'/forgot-password', async function(req, res) {
+    
+      let email = trim(req.body.email);
+  
+      let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
+      let checkForgotPasswordEmail;
+      try{
+        [checkForgotPasswordEmail] = await db.execute(checkForgotPasswordEmailQuery, [ email ]);
+      }catch(error){
+        console.log('SQL-Error: '+error);
+        return res.status(500).json({
+          status: 500,
+          message: 'Could not connect to server'
+        });
+      }
+  
+      if (checkForgotPasswordEmail.length == 1) {
+
+        let token = uuidv5(email, uuidv4());
+
+        let updateForgotPasswordFieldQuery = "UPDATE users SET forgot_password_code = ?, forgot_password_stamp = NOW() WHERE email = ?";
+        let updateForgotPasswordField;
+        try{
+          [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        let action_url = "http://localhost:3000/reset-password/" + token
+      // sendRegisterationEmail(email, action_url);
+        return res.status(200).json({
+          status: 200,
+          message: "worked"
+        });
+  
+      }
+      else{
+  
+        return res.status(200).json({
+          status: 200,
+          message: "failed"
+        });
+  
+      }
+  
+    });
+    // forgot password end
+
+  // verify email token start
   app.post(PREFIX+'/verify-token', async function(req, res) {
     
     let token = trim(req.body.token);
@@ -72,7 +125,9 @@ const routes = (app) => {
     }
 
   });
+  // verify email token end
 
+  // register users start
   app.post(PREFIX + '/register', async function(req, res){
 
     let fullName = trim(req.body.fullName);
@@ -151,6 +206,8 @@ const routes = (app) => {
       });
 
   });
+
+  // register users end
 
 
 }
