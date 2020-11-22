@@ -23,6 +23,72 @@ const routes = (app) => {
 
   });
 
+        // reset password start
+        app.post(PREFIX+'/reset-password', async function(req, res) {
+    
+          let token = trim(req.body.token);
+          let password = trim(req.body.password);
+          let passwordHash = hashPassword(password);
+      
+          let resetPasswordCheckQuery = "UPDATE users SET password = ? WHERE reset_password_code = ?";
+          let resetPassword;
+          try{
+            [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
+      
+            return res.status(200).json({
+              status: 200,
+              message: "worked",
+            });
+      
+        });
+        // reset password end
+
+      // reset password token check start
+      app.post(PREFIX+'/reset-password-token-check', async function(req, res) {
+    
+        let token = trim(req.body.token);
+    
+        let resetPasswordTokenCheckQuery = "SELECT * FROM users WHERE reset_password_code = ?";
+        let resetPasswordTokenCheck;
+        try{
+          [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (resetPasswordTokenCheck.length == 1) {
+  
+          let fullname = resetPasswordTokenCheck[0].fullname;
+          return res.status(200).json({
+            status: 200,
+            message: "worked",
+            fullname: fullname,
+          });
+    
+        }
+        else{
+    
+          return res.status(200).json({
+            status: 200,
+            message: "failed"
+          });
+    
+        }
+    
+      });
+      // reset password token check end
+
     // forgot password start
     app.post(PREFIX+'/forgot-password', async function(req, res) {
     
