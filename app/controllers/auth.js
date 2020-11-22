@@ -78,9 +78,9 @@ const routes = (app) => {
     }
 
     if (checkEmailExist.length > 0) {
-      return res.status(401).json({
-        status: 401,
-        message: "Already"
+      return res.status(200).json({
+        status: 200,
+        message: "already"
       });
     }
 
@@ -96,9 +96,9 @@ const routes = (app) => {
       });
     }
 
-    let action_url = "http://localhost:3000/email-verification/" + hash
+    let action_url = "http://localhost:3000/email-verification/code/" + hash
 
-      sendRegisterationEmail(email, fullName, action_url);
+      // sendRegisterationEmail(email, fullName, action_url);
       return res.status(200).json({
         status: 200,
         message: "worked"
