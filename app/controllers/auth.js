@@ -37,7 +37,7 @@ const routes = (app) => {
             });
           }
       
-          let resetPasswordCheckQuery = "UPDATE users SET password = ? WHERE reset_password_code = ?";
+          let resetPasswordCheckQuery = "UPDATE users SET password = ?, resetPasswordCodeStatus = 1 WHERE reset_password_code = ?";
           let resetPassword;
           try{
             [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
@@ -62,7 +62,7 @@ const routes = (app) => {
     
         let token = trim(req.body.token);
     
-        let resetPasswordTokenCheckQuery = "SELECT * FROM users WHERE reset_password_code = ?";
+        let resetPasswordTokenCheckQuery = "SELECT * FROM users WHERE reset_password_code = ? AND resetPasswordCodeStatus = 0";
         let resetPasswordTokenCheck;
         try{
           [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
