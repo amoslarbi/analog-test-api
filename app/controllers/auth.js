@@ -29,6 +29,13 @@ const routes = (app) => {
           let token = trim(req.body.token);
           let password = trim(req.body.password);
           let passwordHash = hashPassword(password);
+
+          if(password.length === 0){
+            return res.status(400).json({
+              status: 400,
+              message: "Password required"
+            });
+          }
       
           let resetPasswordCheckQuery = "UPDATE users SET password = ? WHERE reset_password_code = ?";
           let resetPassword;
@@ -93,6 +100,13 @@ const routes = (app) => {
     app.post(PREFIX+'/forgot-password', async function(req, res) {
     
       let email = trim(req.body.email);
+
+      if(email.length === 0){
+        return res.status(400).json({
+          status: 400,
+          message: "Email required"
+        });
+      }
   
       let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
       let checkForgotPasswordEmail;
