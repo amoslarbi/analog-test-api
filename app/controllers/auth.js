@@ -123,7 +123,7 @@ const routes = (app) => {
         }
 
         let action_url = "http://localhost:3000/reset-password/" + token
-      // sendRegisterationEmail(email, action_url);
+      // sendForgotPasswordEmail(email, action_url);
         return res.status(200).json({
           status: 200,
           message: "worked"
@@ -204,33 +204,43 @@ const routes = (app) => {
     let hash = uuidv5(email, uuidv4());
     let passwordHash = hashPassword(password);
 
-    if(fullName.length === 0){
+    let theArray = [];
+    let theArrayKyiv = [];
+    theArray.push(fullName, country, email, password);
+    for (let i = 0; i < theArray.length; i++) {
+          if (theArray[i] == null || theArray[i] == "" || theArray[i] == undefined) {
+            theArrayKyiv.push(i);
+        }
+    }
+    console.log(theArrayKyiv);
+
+    if(theArrayKyiv.length > 0){
       return res.status(400).json({
         status: 400,
-        message: "Full name required"
+        message: theArrayKyiv
       });
     }
 
-    if(country.length === 0){
-      return res.status(400).json({
-        status: 400,
-        message: "Country required"
-      });
-    }
+    // if(country.length === 0){
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "Country required"
+    //   });
+    // }
 
-    if(email.length === 0){
-      return res.status(400).json({
-        status: 400,
-        message: "Email required"
-      });
-    }
+    // if(email.length === 0){
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "Email required"
+    //   });
+    // }
 
-    if(password.length === 0){
-      return res.status(400).json({
-        status: 400,
-        message: "Password required"
-      });
-    }
+    // if(password.length === 0){
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "Password required"
+    //   });
+    // }
 
     let checkEmailExistQuery = "SELECT id FROM users WHERE email = ?";
     let checkEmailExist;
@@ -245,8 +255,8 @@ const routes = (app) => {
     }
 
     if (checkEmailExist.length > 0) {
-      return res.status(200).json({
-        status: 200,
+      return res.status(400).json({
+        status: 400,
         message: "already"
       });
     }
