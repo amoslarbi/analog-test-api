@@ -133,7 +133,7 @@ const routes = (app) => {
 
     let token = uuidv5(email, uuidv4());
 
-    let updateForgotPasswordFieldQuery = "UPDATE users SET forgot_password_code = ?, forgot_password_stamp = NOW() WHERE email = ?";
+    let updateForgotPasswordFieldQuery = "UPDATE users SET reset_password_code = ?, reset_password_stamp = NOW() WHERE email = ?";
     let updateForgotPasswordField;
     try{
       [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
