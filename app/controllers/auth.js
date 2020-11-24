@@ -8,11 +8,10 @@ const {
   validatePassword,
   checkPassword,
   hashPassword,
-  sendMessageToTelegram
+  sendMessageToTelegram,
+  sendRegisterationEmail
 } = require('../utilities/utilities');
-const {
-  sendRegisterationEmail,
-} = require('../utilities/utilities');
+const API_CONSTANTS = require('../misc/constants')
 
 const PREFIX = "/auth";
 
@@ -298,8 +297,7 @@ const routes = (app) => {
       });
     }
 
-    let action_url = "http://localhost:3000/email-verification/code/" + hash
-
+    let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
     // sendRegisterationEmail(email, fullName, action_url);
     return res.status(200).json({
       status: 200,

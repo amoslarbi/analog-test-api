@@ -1,13 +1,9 @@
-const Production = {
+
+const API_CONSTANTS = {
   Constants: {
-      "API_BASE_URL": "",
+    OBALLOT_URL:  process.env.API_MODE === 'production' ? "https://oballot.com" : "http://localhost:7070",
+    CLIENT_APP_URL:  process.env.API_MODE === 'production' ? "https://app.oballot.com" : "http://localhost:3000",
   }
 }
 
-const Development = {
-  Constants: {
-    "API_BASE_URL": "http://localhost:3000",
-  }
-}
-
-export default process.env.CLIENT_APP_MODE === 'production' ? Production.Constants : Development.Constants;
+module.exports = API_CONSTANTS;
