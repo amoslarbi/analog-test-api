@@ -32,36 +32,11 @@ const routes = (app) => {
     if(password.length === 0){
       return res.status(400).json({
         status: 400,
-        message: "Password required"
+        message: "Enter a password"
       });
     }
 
-    let resetPasswordCheckQuery = "UPDATE users SET password = ?, resetPasswordCodeStatus = 1 WHERE reset_password_code = ?";
-    let resetPassword;
-    try{
-      [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
-    }catch(error){
-      console.log('SQL-Error: '+error);
-      return res.status(500).json({
-        status: 500,
-        message: 'Could not connect to server'
-      });
-    }
-
-      return res.status(200).json({
-        status: 200,
-        message: "worked",
-      });
-
-  });
-  // reset password end
-
-  // reset password token check start
-  app.post(PREFIX+'/reset-password-token-check', async function(req, res) {
-
-    let token = trim(req.body.token);
-
-    let resetPasswordTokenCheckQuery = "SELECT * FROM users WHERE reset_password_code = ? AND resetPasswordCodeStatus = 0";
+    let resetPasswordTokenCheckQuery = "SELECT `id` FROM `users` WHERE `reset_password_code` = ? AND `reset_password_status` = 0";
     let resetPasswordTokenCheck;
     try{
       [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
@@ -73,21 +48,65 @@ const routes = (app) => {
       });
     }
 
-    if (resetPasswordTokenCheck.length == 1) {
+    if (resetPasswordTokenCheck.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "Invalid token"
+      });
+    }
+
+    let resetPasswordCheckQuery = "UPDATE users SET password = ?, reset_password_status = 1 WHERE reset_password_code = ?";
+    let resetPassword;
+    try{
+      [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "worked",
+    });
+
+  });
+  // reset password end
+
+  // reset password token check start
+  app.post(PREFIX+'/reset-password-token-check', async function(req, res) {
+
+    let token = trim(req.body.token);
+
+    let resetPasswordTokenCheckQuery = "SELECT `fullname` FROM `users` WHERE `reset_password_code` = ? AND `reset_password_status` = 0";
+    let resetPasswordTokenCheck;
+    try{
+      [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (resetPasswordTokenCheck.length === 1) {
 
       let fullname = resetPasswordTokenCheck[0].fullname;
       return res.status(200).json({
         status: 200,
-        message: "worked",
+        message: "valid token",
         fullname: fullname,
       });
 
     }
     else{
 
-      return res.status(200).json({
-        status: 200,
-        message: "failed"
+      return res.status(400).json({
+        status: 400,
+        message: "Invalid token"
       });
 
     }
