@@ -161,7 +161,7 @@ const routes = (app) => {
     
     let token = trim(req.body.token);
 
-    let checkTokenQuery = "SELECT * FROM users WHERE `email_verification_code` = ? AND `email_verification_status` = 0";
+    let checkTokenQuery = "SELECT `id` FROM users WHERE `email_verification_code` = ? AND `email_verification_status` = 0";
     let checkToken;
     try{
       [checkToken] = await db.execute(checkTokenQuery, [ token ]);
