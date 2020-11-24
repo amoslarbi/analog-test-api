@@ -101,11 +101,15 @@ const routes = (app) => {
     let email = trim(req.body.email);
 
     if(email.length === 0){
-      errorCount++;
-      errorInfo.email = "Enter a valid email";
+      return res.status(400).json({
+        status: 400,
+        message: 'Enter a valid email'
+      });
     }else if(!validateEmail(email)){
-      errorCount++;
-      errorInfo.email = "Enter a valid email";
+      return res.status(400).json({
+        status: 400,
+        message: 'Enter a valid email'
+      });
     }
 
     let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
@@ -120,38 +124,33 @@ const routes = (app) => {
       });
     }
 
-    if (checkForgotPasswordEmail.length == 1) {
+    if (checkForgotPasswordEmail.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Email does not exists'
+      });
+    }
 
-      let token = uuidv5(email, uuidv4());
+    let token = uuidv5(email, uuidv4());
 
-      let updateForgotPasswordFieldQuery = "UPDATE users SET forgot_password_code = ?, forgot_password_stamp = NOW() WHERE email = ?";
-      let updateForgotPasswordField;
-      try{
-        [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
-      }catch(error){
-        console.log('SQL-Error: '+error);
-        return res.status(500).json({
-          status: 500,
-          message: 'Could not connect to server'
-        });
-      }
+    let updateForgotPasswordFieldQuery = "UPDATE users SET forgot_password_code = ?, forgot_password_stamp = NOW() WHERE email = ?";
+    let updateForgotPasswordField;
+    try{
+      [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
 
-      let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/reset-password/" + token
+    let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/reset-password/" + token
     // sendForgotPasswordEmail(email, action_url);
-      return res.status(200).json({
-        status: 200,
-        message: "worked"
-      });
-
-    }
-    else{
-
-      return res.status(200).json({
-        status: 200,
-        message: "failed"
-      });
-
-    }
+    return res.status(200).json({
+      status: 200,
+      message: "Email sent with steps on how to reset your password"
+    });
 
   });
   // forgot password end
