@@ -23,95 +23,111 @@ const routes = (app) => {
 
   });
 
-        // reset password start
-        app.post(PREFIX+'/reset-password', async function(req, res) {
-    
-          let token = trim(req.body.token);
-          let password = trim(req.body.password);
-          let passwordHash = hashPassword(password);
+  // reset password start
+  app.post(PREFIX+'/reset-password', async function(req, res) {
 
-          if(password.length === 0){
-            return res.status(400).json({
-              status: 400,
-              message: "Password required"
-            });
-          }
-      
-          let resetPasswordCheckQuery = "UPDATE users SET password = ?, resetPasswordCodeStatus = 1 WHERE reset_password_code = ?";
-          let resetPassword;
-          try{
-            [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
-          }catch(error){
-            console.log('SQL-Error: '+error);
-            return res.status(500).json({
-              status: 500,
-              message: 'Could not connect to server'
-            });
-          }
-      
-            return res.status(200).json({
-              status: 200,
-              message: "worked",
-            });
-      
-        });
-        // reset password end
+    let token = trim(req.body.token);
+    let password = trim(req.body.password);
+    let passwordHash = hashPassword(password);
 
-      // reset password token check start
-      app.post(PREFIX+'/reset-password-token-check', async function(req, res) {
-    
-        let token = trim(req.body.token);
-    
-        let resetPasswordTokenCheckQuery = "SELECT * FROM users WHERE reset_password_code = ? AND resetPasswordCodeStatus = 0";
-        let resetPasswordTokenCheck;
-        try{
-          [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server'
-          });
-        }
-    
-        if (resetPasswordTokenCheck.length == 1) {
-  
-          let fullname = resetPasswordTokenCheck[0].fullname;
-          return res.status(200).json({
-            status: 200,
-            message: "worked",
-            fullname: fullname,
-          });
-    
-        }
-        else{
-    
-          return res.status(200).json({
-            status: 200,
-            message: "failed"
-          });
-    
-        }
-    
+    if(password.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Password required"
       });
-      // reset password token check end
+    }
 
-    // forgot password start
-    app.post(PREFIX+'/forgot-password', async function(req, res) {
-    
-      let email = trim(req.body.email);
+    let resetPasswordCheckQuery = "UPDATE users SET password = ?, resetPasswordCodeStatus = 1 WHERE reset_password_code = ?";
+    let resetPassword;
+    try{
+      [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
 
-      if(email.length === 0){
-        return res.status(400).json({
-          status: 400,
-          message: "Email required"
-        });
-      }
+      return res.status(200).json({
+        status: 200,
+        message: "worked",
+      });
+
+  });
+  // reset password end
+
+  // reset password token check start
+  app.post(PREFIX+'/reset-password-token-check', async function(req, res) {
+
+    let token = trim(req.body.token);
+
+    let resetPasswordTokenCheckQuery = "SELECT * FROM users WHERE reset_password_code = ? AND resetPasswordCodeStatus = 0";
+    let resetPasswordTokenCheck;
+    try{
+      [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (resetPasswordTokenCheck.length == 1) {
+
+      let fullname = resetPasswordTokenCheck[0].fullname;
+      return res.status(200).json({
+        status: 200,
+        message: "worked",
+        fullname: fullname,
+      });
+
+    }
+    else{
+
+      return res.status(200).json({
+        status: 200,
+        message: "failed"
+      });
+
+    }
+
+  });
+  // reset password token check end
+
+  // forgot password start
+  app.post(PREFIX+'/forgot-password', async function(req, res) {
   
-      let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
-      let checkForgotPasswordEmail;
+    let email = trim(req.body.email);
+
+    if(email.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Email required"
+      });
+    }
+
+    let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
+    let checkForgotPasswordEmail;
+    try{
+      [checkForgotPasswordEmail] = await db.execute(checkForgotPasswordEmailQuery, [ email ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (checkForgotPasswordEmail.length == 1) {
+
+      let token = uuidv5(email, uuidv4());
+
+      let updateForgotPasswordFieldQuery = "UPDATE users SET forgot_password_code = ?, forgot_password_stamp = NOW() WHERE email = ?";
+      let updateForgotPasswordField;
       try{
-        [checkForgotPasswordEmail] = await db.execute(checkForgotPasswordEmailQuery, [ email ]);
+        [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
       }catch(error){
         console.log('SQL-Error: '+error);
         return res.status(500).json({
@@ -119,42 +135,26 @@ const routes = (app) => {
           message: 'Could not connect to server'
         });
       }
-  
-      if (checkForgotPasswordEmail.length == 1) {
 
-        let token = uuidv5(email, uuidv4());
+      let action_url = "http://localhost:3000/reset-password/" + token
+    // sendForgotPasswordEmail(email, action_url);
+      return res.status(200).json({
+        status: 200,
+        message: "worked"
+      });
 
-        let updateForgotPasswordFieldQuery = "UPDATE users SET forgot_password_code = ?, forgot_password_stamp = NOW() WHERE email = ?";
-        let updateForgotPasswordField;
-        try{
-          [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server'
-          });
-        }
+    }
+    else{
 
-        let action_url = "http://localhost:3000/reset-password/" + token
-      // sendForgotPasswordEmail(email, action_url);
-        return res.status(200).json({
-          status: 200,
-          message: "worked"
-        });
-  
-      }
-      else{
-  
-        return res.status(200).json({
-          status: 200,
-          message: "failed"
-        });
-  
-      }
-  
-    });
-    // forgot password end
+      return res.status(200).json({
+        status: 200,
+        message: "failed"
+      });
+
+    }
+
+  });
+  // forgot password end
 
   // verify email token start
   app.post(PREFIX+'/verify-token', async function(req, res) {
@@ -218,43 +218,48 @@ const routes = (app) => {
     let hash = uuidv5(email, uuidv4());
     let passwordHash = hashPassword(password);
 
-    let theArray = [];
-    let theArrayKyiv = [];
-    theArray.push(fullName, country, email, password);
-    for (let i = 0; i < theArray.length; i++) {
-          if (theArray[i] == null || theArray[i] == "" || theArray[i] == undefined) {
-            theArrayKyiv.push(i);
-        }
+    // let theArray = [];
+    // let theArrayKyiv = [];
+    // theArray.push(fullName, country, email, password);
+    // for (let i = 0; i < theArray.length; i++) {
+    //       if (theArray[i] == null || theArray[i] == "" || theArray[i] == undefined) {
+    //         theArrayKyiv.push(i);
+    //     }
+    // }
+    // console.log(theArrayKyiv);
+
+    // if(theArrayKyiv.length > 0){
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: theArrayKyiv
+    //   });
+    // }
+
+    let errorInfo = {}
+    let errorCount = 0;
+
+    if(fullName.length === 0){
+      errorCount++;
+      errorInfo.fullName = "Enter your Full name";
     }
-    console.log(theArrayKyiv);
 
-    if(theArrayKyiv.length > 0){
-      return res.status(400).json({
-        status: 400,
-        message: theArrayKyiv
-      });
+    if(country.length === 0){
+      errorCount++;
+      errorInfo.country = "Select a Country";
     }
 
-    // if(country.length === 0){
-    //   return res.status(400).json({
-    //     status: 400,
-    //     message: "Country required"
-    //   });
-    // }
+    if(email.length === 0){
+      errorCount++;
+      errorInfo.email = "Enter a valid email";
+    }else if(!validateEmail(email)){
+      errorCount++;
+      errorInfo.email = "Enter a valid email";
+    }
 
-    // if(email.length === 0){
-    //   return res.status(400).json({
-    //     status: 400,
-    //     message: "Email required"
-    //   });
-    // }
-
-    // if(password.length === 0){
-    //   return res.status(400).json({
-    //     status: 400,
-    //     message: "Password required"
-    //   });
-    // }
+    if(password.length === 0){
+      errorCount++;
+      errorInfo.password = "Enter a password";
+    }
 
     let checkEmailExistQuery = "SELECT id FROM users WHERE email = ?";
     let checkEmailExist;
@@ -269,16 +274,22 @@ const routes = (app) => {
     }
 
     if (checkEmailExist.length > 0) {
+      errorCount++;
+      errorInfo.email = "Email already exists.";
+    }
+
+    if(errorCount > 0){
       return res.status(400).json({
         status: 400,
-        message: "already"
+        message: 'Error: Sorry, failed to create account',
+        errors: errorInfo
       });
     }
 
-    let signUpQuery = "INSERT INTO users (`uuid`, `fullName`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `account_status`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW())";
+    let signUpQuery = "INSERT INTO users (`uuid`, `fullName`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, NOW())";
     let signUp;
     try{
-      [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "EC", "Pending"]);
+      [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "u"]);
     }catch(error){
       console.log('SQL-Error: '+error);
       return res.status(500).json({
@@ -289,11 +300,11 @@ const routes = (app) => {
 
     let action_url = "http://localhost:3000/email-verification/code/" + hash
 
-      // sendRegisterationEmail(email, fullName, action_url);
-      return res.status(200).json({
-        status: 200,
-        message: "worked"
-      });
+    // sendRegisterationEmail(email, fullName, action_url);
+    return res.status(200).json({
+      status: 200,
+      message: "worked"
+    });
 
   });
 
