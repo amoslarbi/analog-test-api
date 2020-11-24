@@ -101,10 +101,11 @@ const routes = (app) => {
     let email = trim(req.body.email);
 
     if(email.length === 0){
-      return res.status(400).json({
-        status: 400,
-        message: "Email required"
-      });
+      errorCount++;
+      errorInfo.email = "Enter a valid email";
+    }else if(!validateEmail(email)){
+      errorCount++;
+      errorInfo.email = "Enter a valid email";
     }
 
     let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
@@ -135,7 +136,7 @@ const routes = (app) => {
         });
       }
 
-      let action_url = "http://localhost:3000/reset-password/" + token
+      let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/reset-password/" + token
     // sendForgotPasswordEmail(email, action_url);
       return res.status(200).json({
         status: 200,
