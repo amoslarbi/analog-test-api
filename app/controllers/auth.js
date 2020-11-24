@@ -159,13 +159,11 @@ const routes = (app) => {
   app.post(PREFIX+'/verify-token', async function(req, res) {
     
     let token = trim(req.body.token);
-    let tokenOkay = 1;
-    let tokenNotOkay = 0;
 
-    let checkTokenQuery = "SELECT * FROM users WHERE email_verification_code = ? AND account_status = ?";
+    let checkTokenQuery = "SELECT * FROM users WHERE `email_verification_code` = ? AND `email_verification_status` = 0";
     let checkToken;
     try{
-      [checkToken] = await db.execute(checkTokenQuery, [ token, tokenNotOkay ]);
+      [checkToken] = await db.execute(checkTokenQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
       return res.status(500).json({
@@ -174,34 +172,30 @@ const routes = (app) => {
       });
     }
 
-    if (checkToken.length == 1) {
-
-      let changeTokenStatusQuery = "UPDATE users SET account_status = ? WHERE email_verification_code = ?";
-      let changeTokenStatus;
-      try{
-        [changeTokenStatus] = await db.execute(changeTokenStatusQuery, [ tokenOkay, token ]);
-      }catch(error){
-        console.log('SQL-Error: '+error);
-        return res.status(500).json({
-          status: 500,
-          message: 'Could not connect to server'
-        });
-      }
-
-      return res.status(200).json({
-        status: 200,
-        message: "worked"
+    if (checkToken.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "Account verification link is invalid or has been already"
       });
-
     }
-    else{
 
-      return res.status(200).json({
-        status: 200,
-        message: "failed"
+
+    let changeTokenStatusQuery = "UPDATE users SET `email_verification_status` = 1 WHERE `email_verification_code` = ?";
+    let changeTokenStatus;
+    try{
+      [changeTokenStatus] = await db.execute(changeTokenStatusQuery, [ token ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
       });
-
     }
+
+    return res.status(200).json({
+      status: 200,
+      message: "Account verification successful"
+    });
 
   });
   // verify email token end
