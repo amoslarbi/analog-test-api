@@ -9,7 +9,8 @@ const {
   checkPassword,
   hashPassword,
   sendMessageToTelegram,
-  sendRegisterationEmail
+  sendRegisterationEmail,
+  sendWelcomeEmail
 } = require('../utilities/utilities');
 const API_CONSTANTS = require('../misc/constants')
 
@@ -217,6 +218,8 @@ const routes = (app) => {
         message: 'Could not connect to server'
       });
     }
+
+    // sendWelcomeEmail(email, fullName, action_url);
 
     return res.status(200).json({
       status: 200,
