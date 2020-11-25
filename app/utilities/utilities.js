@@ -63,28 +63,19 @@ const sendMessageToTelegram = (type, message) => {
   let chatID;
   switch (type) {
     case 'bug':
-    chatID = '-424645018';
+    chatID = '-377867783';
     break;
 
-    case 'registration':
-    chatID = '-402509811';
+    case 'alert':
+    chatID = '-299530326';
     break;
-
-    case 'stats':
-    chatID = '-437417153';
-    break;
-
-    case 'elections':
-    chatID = '-452088794';
-    break
   
     default:
-    chatID = '-470792640';
+    chatID = '-384456761';
     break;
   }
 
-  axios.get("https://api.telegram.org/bot" +
-    kusBotToken +
+  axios.get("https://api.telegram.org/bot1498350578:AAGflzdlLfz1nASGluxt_2JSedg0XYPaRlc" +
     "/sendMessage?chat_id=" +
     chatID +
     "&text=" +
