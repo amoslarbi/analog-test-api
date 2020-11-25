@@ -12,7 +12,7 @@ var senderName = "oBallot Team";
 // Send an email:
 const client = new postmark.ServerClient("7cecfd87-1ba1-4f89-9ef3-0b902e484429");
 
-const sendRegisterationEmail = (to_email, name, link) => {
+const sendRegistrationEmail = (to_email, name, link) => {
     client.sendEmailWithTemplate({
       "From": fromEmail,
       "To": to_email,
@@ -42,6 +42,23 @@ const sendWelcomeEmail = (to_email, name, link) => {
       "support_email": supportEmail,
       "sender_name": senderName,
       "product_name": productName,
+      "company_name": productName,
+      "company_address": companyAddress
+    }
+  });
+}
+
+const sendPasswordResetEmail = (to_email, name, link) => {
+  client.sendEmailWithTemplate({
+    "From": fromEmail,
+    "To": to_email,
+    "TemplateAlias": "passwordResetEmail",
+    "TemplateModel": {
+      "product_url": productUrl,
+      "name": name,
+      "product_name": productName,
+      "action_url": link,
+      "support_url": productUrl,
       "company_name": productName,
       "company_address": companyAddress
     }
@@ -129,6 +146,7 @@ module.exports = {
   validateEmail,
   sendMessageToTelegram,
   trim,
-  sendRegisterationEmail,
-  sendWelcomeEmail
+  sendRegistrationEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail
 }

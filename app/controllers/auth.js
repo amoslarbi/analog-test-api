@@ -9,10 +9,12 @@ const {
   checkPassword,
   hashPassword,
   sendMessageToTelegram,
-  sendRegisterationEmail,
-  sendWelcomeEmail
+  sendRegistrationEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail
 } = require('../utilities/utilities');
-const API_CONSTANTS = require('../misc/constants')
+const API_CONSTANTS = require('../misc/constants');
+const { Constants } = require('../misc/constants');
 
 const PREFIX = "/auth";
 
@@ -135,7 +137,7 @@ const routes = (app) => {
       });
     }
 
-    let checkForgotPasswordEmailQuery = "SELECT * FROM users WHERE email = ?";
+    let checkForgotPasswordEmailQuery = "SELECT `id`,`fullname` FROM users WHERE email = ?";
     let checkForgotPasswordEmail;
     try{
       [checkForgotPasswordEmail] = await db.execute(checkForgotPasswordEmailQuery, [ email ]);
@@ -170,8 +172,9 @@ const routes = (app) => {
       });
     }
 
+    let fullName = checkForgotPasswordEmail[0].fullname;
     let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/reset-password/" + token
-    // sendForgotPasswordEmail(email, action_url);
+    // sendPasswordResetEmail(email, fullName, action_url);
     return res.status(200).json({
       status: 200,
       message: "Email sent with steps on how to reset your password"
@@ -185,7 +188,7 @@ const routes = (app) => {
     
     let token = trim(req.body.token);
 
-    let checkTokenQuery = "SELECT `id` FROM users WHERE `email_verification_code` = ? AND `email_verification_status` = 0";
+    let checkTokenQuery = "SELECT `id`, `fullname`, `email` FROM users WHERE `email_verification_code` = ? AND `email_verification_status` = 0";
     let checkToken;
     try{
       [checkToken] = await db.execute(checkTokenQuery, [ token ]);
@@ -204,6 +207,10 @@ const routes = (app) => {
         message: "Account verification link is invalid or has been already"
       });
     }
+
+    let fullName = checkToken[0].fullname;
+    let email = checkToken[0].email;
+    let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL;
 
 
     let changeTokenStatusQuery = "UPDATE users SET `email_verification_status` = 1 WHERE `email_verification_code` = ?";
@@ -292,7 +299,7 @@ const routes = (app) => {
       });
     }
 
-    let signUpQuery = "INSERT INTO users (`uuid`, `fullName`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, NOW())";
+    let signUpQuery = "INSERT INTO users (`uuid`, `fullname`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, NOW())";
     let signUp;
     try{
       [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "u"]);
