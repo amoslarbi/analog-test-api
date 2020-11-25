@@ -42,6 +42,7 @@ const routes = (app) => {
       [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+resetPasswordTokenCheckQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -61,6 +62,7 @@ const routes = (app) => {
       [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+resetPasswordCheckQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -86,6 +88,7 @@ const routes = (app) => {
       [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+resetPasswordTokenCheckQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -137,6 +140,7 @@ const routes = (app) => {
       [checkForgotPasswordEmail] = await db.execute(checkForgotPasswordEmailQuery, [ email ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkForgotPasswordEmailQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -158,6 +162,7 @@ const routes = (app) => {
       [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateForgotPasswordFieldQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -185,6 +190,7 @@ const routes = (app) => {
       [checkToken] = await db.execute(checkTokenQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkTokenQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -205,6 +211,7 @@ const routes = (app) => {
       [changeTokenStatus] = await db.execute(changeTokenStatusQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+changeTokenStatusQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -229,23 +236,6 @@ const routes = (app) => {
     let uuid = uuidv5(email, uuidv4());
     let hash = uuidv5(email, uuidv4());
     let passwordHash = hashPassword(password);
-
-    // let theArray = [];
-    // let theArrayKyiv = [];
-    // theArray.push(fullName, country, email, password);
-    // for (let i = 0; i < theArray.length; i++) {
-    //       if (theArray[i] == null || theArray[i] == "" || theArray[i] == undefined) {
-    //         theArrayKyiv.push(i);
-    //     }
-    // }
-    // console.log(theArrayKyiv);
-
-    // if(theArrayKyiv.length > 0){
-    //   return res.status(400).json({
-    //     status: 400,
-    //     message: theArrayKyiv
-    //   });
-    // }
 
     let errorInfo = {}
     let errorCount = 0;
@@ -279,6 +269,7 @@ const routes = (app) => {
       [checkEmailExist] = await db.execute(checkEmailExistQuery, [email]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkEmailExistQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -304,6 +295,7 @@ const routes = (app) => {
       [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "u"]);
     }catch(error){
       console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+signUpQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
