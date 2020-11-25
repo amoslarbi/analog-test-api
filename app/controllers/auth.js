@@ -312,6 +312,8 @@ const routes = (app) => {
 
     let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
     // sendRegisterationEmail(email, fullName, action_url);
+    let alertMessage = `${fullName} signed up for oBallot from ${country}.`
+    sendMessageToTelegram('alert', alertMessage);
     return res.status(200).json({
       status: 200,
       message: "worked"
