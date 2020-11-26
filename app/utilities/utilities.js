@@ -4,21 +4,65 @@ const { v4: uuidv4 } = require('uuid');
 var postmark = require("postmark");
 var fromEmail = "hello@oballot.com";
 var productUrl = "https://oballot.com";
+var supportEmail = "hello@oballot.com";
+var productName = "oBallot";
+var companyAddress = "Amrahia, R40, Adenta-Dodowa Road, Accra, Ghana";
+var senderName = "oBallot Team";
 
 // Send an email:
 const client = new postmark.ServerClient("7cecfd87-1ba1-4f89-9ef3-0b902e484429");
 
-const sendRegisterationEmail = (to_email, name, link) => {
+const sendRegistrationEmail = (to_email, name, link) => {
     client.sendEmailWithTemplate({
-        "From": fromEmail,
-        "To": to_email,
-        "TemplateAlias": "sendRegistrationEmail",
-        "TemplateModel": {
-            "product_url": productUrl,
-            "name": name,
-            "action_url": link
-        }
-      });
+      "From": fromEmail,
+      "To": to_email,
+      "TemplateAlias": "accountActivationEmail",
+      "TemplateModel": {
+        "product_url": productUrl,
+        "name": name,
+        "action_url": link,
+        "support_email": supportEmail,
+        "sender_name": senderName,
+        "product_name": productName,
+        "company_name": productName,
+        "company_address": companyAddress
+      }
+    });
+}
+
+const sendWelcomeEmail = (to_email, name, link) => {
+  client.sendEmailWithTemplate({
+    "From": fromEmail,
+    "To": to_email,
+    "TemplateAlias": "welcomeEmail",
+    "TemplateModel": {
+      "product_url": productUrl,
+      "name": name,
+      "action_url": link,
+      "support_email": supportEmail,
+      "sender_name": senderName,
+      "product_name": productName,
+      "company_name": productName,
+      "company_address": companyAddress
+    }
+  });
+}
+
+const sendPasswordResetEmail = (to_email, name, link) => {
+  client.sendEmailWithTemplate({
+    "From": fromEmail,
+    "To": to_email,
+    "TemplateAlias": "passwordResetEmail",
+    "TemplateModel": {
+      "product_url": productUrl,
+      "name": name,
+      "product_name": productName,
+      "action_url": link,
+      "support_url": productUrl,
+      "company_name": productName,
+      "company_address": companyAddress
+    }
+  });
 }
 
 const validatePhoneNumber = phone_number => {
@@ -102,5 +146,7 @@ module.exports = {
   validateEmail,
   sendMessageToTelegram,
   trim,
-  sendRegisterationEmail,
+  sendRegistrationEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail
 }
