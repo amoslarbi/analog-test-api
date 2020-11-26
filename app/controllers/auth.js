@@ -60,7 +60,7 @@ const routes = (app) => {
     if (checkLoginQuery.length === 0) {
         return res.status(400).json({
           status: 400,
-          message: 'Invalid credentials'
+          message: 'Invalid login credentials'
         });
     }
 
@@ -68,7 +68,7 @@ const routes = (app) => {
     if(!checkPassword(password, passwordFromDb)){
       return res.status(400).json({
         status: 400,
-        message: 'Invalid credentials'
+        message: 'Invalid login credentials'
       });
     }
 
