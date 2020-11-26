@@ -10,7 +10,7 @@ var companyAddress = "Amrahia, R40, Adenta-Dodowa Road, Accra, Ghana";
 var senderName = "oBallot Team";
 
 // Send an email:
-const client = new postmark.ServerClient("7cecfd87-1ba1-4f89-9ef3-0b902e484429");
+const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
 const sendRegistrationEmail = (to_email, name, link) => {
     client.sendEmailWithTemplate({
@@ -119,7 +119,8 @@ const sendMessageToTelegram = (type, message) => {
     break;
   }
 
-  axios.get("https://api.telegram.org/bot1498350578:AAGflzdlLfz1nASGluxt_2JSedg0XYPaRlc" +
+  axios.get("https://api.telegram.org/bot" +
+    process.env.TELEGRAM_BOT_API_KEY+
     "/sendMessage?chat_id=" +
     chatID +
     "&text=" +
