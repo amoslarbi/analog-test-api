@@ -80,14 +80,14 @@ const routes = (app) => {
       uuid: uuid
     }
 
-    const jwt_access_token = jwt.sign({access_data}, myConfig.jwt_key, { expiresIn: '30d' })
+    const jwt_access_token = jwt.sign({access_data}, process.env.JWT_KEY, { expiresIn: '30d' })
 
     return res.status(200).json({
       status: 200,
       user_obj: {
         fullName: fullName,
         email: email,
-        email_verification_status: email_verification_status
+        emailVerificationStatus: email_verification_status
       },
       access_token: jwt_access_token
     })
