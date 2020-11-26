@@ -20,6 +20,53 @@ const routes = (app) => {
   // Login and Generate JWT token
   app.post(PREFIX+'/login', async (req, res) => {
 
+    let email = req.body.email;
+    let password = req.body.password;
+
+    if(email.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Enter email"
+      });
+    }
+
+    if(password.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Enter password"
+      });
+    }
+
+    let loginQuery = "SELECT * FROM `users` WHERE `email` = ?";
+    let checkLoginQuery;
+    try{
+      [checkLoginQuery] = await db.execute(loginQuery, [ email ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkForgotPasswordEmailQuery);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (checkLoginQuery.length === 0) {
+        return res.status(400).json({
+          status: 400,
+          message: 'Invalid credentials'
+        });
+    }
+
+    let passwordFromDb = checkLoginQuery[0].password;
+    if(!checkPassword(password, passwordFromDb)){
+      return res.status(400).json({
+        status: 400,
+        message: 'Invalid credentials'
+      });
+    }
+
+    //jwt start
+
   });
 
   // reset password start

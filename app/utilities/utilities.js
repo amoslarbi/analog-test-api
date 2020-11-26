@@ -40,8 +40,8 @@ const validatePassword = password => {
   return trimPassword.length < 8? false:true;
 };
 
-const checkPassword = (password, hash) => {
-  return bcrypt.compareSync(password, hash);
+const checkPassword = (password, hashedPassword) => {
+  return bcrypt.compareSync(password, hashedPassword);
 };
 
 const hashPassword = password => {
