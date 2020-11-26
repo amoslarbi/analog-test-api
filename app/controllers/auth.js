@@ -75,7 +75,6 @@ const routes = (app) => {
     //jwt start
     let uuid = checkLoginQuery[0].uuid;
     let fullName = checkLoginQuery[0].fullname;
-    let email = checkLoginQuery[0].email;
     let email_verification_status = checkLoginQuery[0].email_verification_status;
     const access_data = {
       uuid: uuid
