@@ -243,7 +243,7 @@ const routes = (app) => {
 
     let fullName = checkForgotPasswordEmail[0].fullname;
     let action_url = Constants.CLIENT_APP_URL + "/reset-password/" + token
-    // sendPasswordResetEmail(email, fullName, action_url);
+    sendPasswordResetEmail(email, fullName, action_url);
     return res.status(200).json({
       status: 200,
       message: "Email sent with steps on how to reset your password"
@@ -295,7 +295,7 @@ const routes = (app) => {
       });
     }
 
-    // sendWelcomeEmail(email, fullName, action_url);
+    sendWelcomeEmail(email, fullName, action_url);
 
     return res.status(200).json({
       status: 200,
@@ -382,7 +382,7 @@ const routes = (app) => {
     }
 
     let action_url = Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
-    // sendRegisterationEmail(email, fullName, action_url);
+    sendRegisterationEmail(email, fullName, action_url);
     let alertMessage = `${fullName} signed up for oBallot from ${country}.`
     sendMessageToTelegram('alert', alertMessage);
     return res.status(200).json({
