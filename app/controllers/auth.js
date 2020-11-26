@@ -13,7 +13,6 @@ const {
   sendWelcomeEmail,
   sendPasswordResetEmail
 } = require('../utilities/utilities');
-const API_CONSTANTS = require('../misc/constants');
 const { Constants } = require('../misc/constants');
 
 const PREFIX = "/auth";
@@ -27,6 +26,11 @@ const routes = (app) => {
     let password = req.body.password;
 
     if(email.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Enter email"
+      });
+    }else if(!validateEmail(email)){
       return res.status(400).json({
         status: 400,
         message: "Enter email"
@@ -239,7 +243,7 @@ const routes = (app) => {
     }
 
     let fullName = checkForgotPasswordEmail[0].fullname;
-    let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/reset-password/" + token
+    let action_url = Constants.CLIENT_APP_URL + "/reset-password/" + token
     // sendPasswordResetEmail(email, fullName, action_url);
     return res.status(200).json({
       status: 200,
@@ -276,7 +280,7 @@ const routes = (app) => {
 
     let fullName = checkToken[0].fullname;
     let email = checkToken[0].email;
-    let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL;
+    let action_url = Constants.CLIENT_APP_URL;
 
 
     let changeTokenStatusQuery = "UPDATE users SET `email_verification_status` = 1 WHERE `email_verification_code` = ?";
@@ -378,7 +382,7 @@ const routes = (app) => {
       });
     }
 
-    let action_url = API_CONSTANTS.Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
+    let action_url = Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
     // sendRegisterationEmail(email, fullName, action_url);
     let alertMessage = `${fullName} signed up for oBallot from ${country}.`
     sendMessageToTelegram('alert', alertMessage);
