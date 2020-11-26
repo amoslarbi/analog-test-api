@@ -69,6 +69,25 @@ const routes = (app) => {
     }
 
     //jwt start
+    let uuid = checkLoginQuery[0].uuid;
+    let fullName = checkLoginQuery[0].fullname;
+    let email = checkLoginQuery[0].email;
+    let email_verification_status = checkLoginQuery[0].email_verification_status;
+    const access_data = {
+      uuid: uuid
+    }
+
+    const jwt_access_token = jwt.sign({access_data}, myConfig.jwt_key, { expiresIn: '30d' })
+
+    return res.status(200).json({
+      status: 200,
+      user_obj: {
+        fullName: fullName,
+        email: email,
+        email_verification_status: email_verification_status
+      },
+      access_token: jwt_access_token
+    })
 
   });
 
