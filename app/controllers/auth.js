@@ -368,7 +368,7 @@ const routes = (app) => {
       });
     }
 
-    let signUpQuery = "INSERT INTO users (`uuid`, `fullname`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, NOW())";
+    let signUpQuery = "INSERT INTO `users` (`uuid`, `fullname`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, NOW())";
     let signUp;
     try{
       [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "u"]);
