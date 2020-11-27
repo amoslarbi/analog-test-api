@@ -1,4 +1,3 @@
-const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
 // sets headers and permissions for all requests.
@@ -18,18 +17,16 @@ const setHeaders = app => {
   });
 }
 
-// initialize cookie-parser to allow us access the cookies stored in the requests.
-const initCookie = app => {
-  app.use(cookieParser());  
-}
-
-
 // middleware function to check for expired session
 const sessionChecker = (req, res, next) => {
-  console.dir(req);
-  const access_token = req.cookies.access_token;
-  if(typeof access_token !== 'undefined'){
-    jwt.verify(access_token, process.env.JWT_KEY, function (error, data) {
+  const bearerHeader = req.headers['authorization'];
+
+  if (bearerHeader) {
+    const bearer = bearerHeader.split(' ');
+    const bearerToken = bearer[1];
+
+    console.dir(bearerToken);
+    jwt.verify(bearerToken, process.env.JWT_KEY, function (error, data) {
       if(error){
         return res.status(401).json({
           status: 401,
@@ -40,16 +37,15 @@ const sessionChecker = (req, res, next) => {
       req.uuid = data.access_data.uuid;
       next();
     })
-  }else{
-    return res.status(401).json({
-      status: 401,
-      message: "authentication invalid"
-    });
-  }  
+  }
+  
+  return res.status(401).json({
+    status: 401,
+    message: "authentication invalid"
+  }); 
 };
 
 module.exports = {
   setHeaders,
-  initCookie,
   sessionChecker
 }

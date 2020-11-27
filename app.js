@@ -11,7 +11,6 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '100mb'}));
 app.use(express.json());
 
 middleware.setHeaders(app); // middleware to initialize headers
-middleware.initCookie(app); // middleware to initialize cookies
 const sessionChecker = middleware.sessionChecker;
 
 apiRoutes.routes(app, sessionChecker);
