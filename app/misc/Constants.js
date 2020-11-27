@@ -6,4 +6,4 @@ const API_CONSTANTS = {
   }
 }
 
-module.exports = API_CONSTANTS.Constants;
+module.exports = API_CONSTANTS;
