@@ -13,7 +13,7 @@ const {
   sendWelcomeEmail,
   sendPasswordResetEmail
 } = require('../utilities/utilities');
-const Constants = require('../misc/constants');
+const Constants = require('../misc/api-constants');
 
 const PREFIX = "/auth";
 
