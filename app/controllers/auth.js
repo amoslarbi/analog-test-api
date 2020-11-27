@@ -382,7 +382,7 @@ const routes = (app) => {
     }
 
     let action_url = Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
-    sendRegisterationEmail(email, fullName, action_url);
+    sendRegistrationEmail(email, fullName, action_url);
     let alertMessage = `${fullName} signed up for oBallot from ${country}.`
     sendMessageToTelegram('alert', alertMessage);
     return res.status(200).json({
