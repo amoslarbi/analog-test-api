@@ -17,11 +17,13 @@ const routes = (app, sessionChecker) => {
       // new EC create election start
       app.post(PREFIX+'/create-election', sessionChecker, async (req, res) => {
 
+        const uuid = req.uuid;
+        console.log(uuid);
         let electionName = req.body.electionName;
         let organization = req.body.organization;
-        let uuid = uuidv5(electionName, uuidv4());
+        let electionUuid = uuidv5(electionName, uuidv4());
 
-        console.log(electionName);
+        console.log(uuid);
     
         if(electionName.length === 0){
           return res.status(400).json({
@@ -57,10 +59,10 @@ const routes = (app, sessionChecker) => {
             });
         }
     
-        let createElectionQuery = "INSERT INTO `users` (`uuid`, `fullname`, `email`, `created_at`) VALUES(?, ?, ?, NOW())";
+        let createElectionQuery = "INSERT INTO `users` (`uuid`, `name`, `organization_name`, `created_at`) VALUES(?, ?, ?, NOW())";
         let checkElectionQuery;
         try{
-          [checkElectionQuery] = await db.execute(createElectionQuery, [uuid, fullName, email ]);
+          [checkElectionQuery] = await db.execute(createElectionQuery, [electionUuid, electionName, organization ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionQuery);

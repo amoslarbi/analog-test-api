@@ -26,6 +26,7 @@ const initCookie = app => {
 
 // middleware function to check for expired session
 const sessionChecker = (req, res, next) => {
+  console.dir(req);
   const access_token = req.cookies.access_token;
   if(typeof access_token !== 'undefined'){
     jwt.verify(access_token, process.env.JWT_KEY, function (error, data) {
