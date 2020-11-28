@@ -37,12 +37,14 @@ const sessionChecker = (req, res, next) => {
       req.uuid = data.access_data.uuid;
       next();
     })
+  }else{
+    return res.status(401).json({
+      status: 401,
+      message: "authentication invalid"
+    }); 
   }
   
-  return res.status(401).json({
-    status: 401,
-    message: "authentication invalid"
-  }); 
+  
 };
 
 module.exports = {
