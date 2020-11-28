@@ -1,4 +1,4 @@
-const mysql_db = require('../database/connection');
+const db = require('../database/connection');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
 const {
@@ -23,20 +23,17 @@ const routes = (app, sessionChecker) => {
         let organization = req.body.organization;
         let electionUuid = uuidv5(electionName, uuidv4());
 
-        console.log(uuid);
-    
+        let errorInfo = {}
+        let errorCount = 0;
+
         if(electionName.length === 0){
-          return res.status(400).json({
-            status: 400,
-            message: "Enter election name"
-          });
+          errorCount++;
+          errorInfo.electionName = "Enter election name";
         }
     
         if(organization.length === 0){
-          return res.status(400).json({
-            status: 400,
-            message: "Enter organization / group name"
-          });
+          errorCount++;
+          errorInfo.organization = "Enter organization / group name";
         }
     
         let electionNameQuery = "SELECT * FROM `elections` WHERE `name` = ? AND `organization_name` = ? ";
@@ -53,13 +50,12 @@ const routes = (app, sessionChecker) => {
         }
     
         if (checkElectionNameQuery.length === 1) {
-            return res.status(400).json({
-              status: 400,
-              message: 'Election name already exist for this organization/group'
-            });
+          errorCount++;
+          errorInfo.duplicate = "Election name already exist for this organization/group";
+          return
         }
     
-        let createElectionQuery = "INSERT INTO `users` (`uuid`, `name`, `organization_name`, `created_at`) VALUES(?, ?, ?, NOW())";
+        let createElectionQuery = "INSERT INTO `elections` (`election_uuid`, `name`, `organization_name`, `created_at`) VALUES(?, ?, ?, NOW())";
         let checkElectionQuery;
         try{
           [checkElectionQuery] = await db.execute(createElectionQuery, [electionUuid, electionName, organization ]);
