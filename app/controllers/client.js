@@ -30,10 +30,10 @@ const routes = (app, sessionChecker) => {
           errorInfo.organization = "Enter organization / group name";
         }
     
-        let electionNameQuery = "SELECT * FROM `elections` WHERE `name` = ? AND `organization_name` = ? ";
+        let electionNameQuery = "SELECT * FROM `elections` WHERE (`name` = ? AND `organization_name` = ?) AND `created_by` = ?  ";
         let checkElectionNameQuery;
         try{
-          [checkElectionNameQuery] = await db.execute(electionNameQuery, [ electionName, organization ]);
+          [checkElectionNameQuery] = await db.execute(electionNameQuery, [ electionName, organization, uuid ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionNameQuery);
@@ -42,17 +42,26 @@ const routes = (app, sessionChecker) => {
             message: 'Could not connect to server'
           });
         }
+
+        let errorMessage = "Error: Sorry, failed to create account";
     
         if (checkElectionNameQuery.length === 1) {
           errorCount++;
-          errorInfo.duplicate = "Election name already exist for this organization/group";
-          return
+          errorMessage = "You already have and election with the same name and organization/group name.";
+        }
+
+        if(errorCount > 0){
+          return res.status(400).json({
+            status: 400,
+            message: errorMessage,
+            errors: errorInfo
+          });
         }
     
-        let createElectionQuery = "INSERT INTO `elections` (`election_uuid`, `name`, `organization_name`, `created_at`) VALUES(?, ?, ?, NOW())";
+        let createElectionQuery = "INSERT INTO `elections` (`election_uuid`, `name`, `organization_name`,`created_by`, `created_at`) VALUES(?, ?, ?, ?, NOW())";
         let checkElectionQuery;
         try{
-          [checkElectionQuery] = await db.execute(createElectionQuery, [electionUuid, electionName, organization ]);
+          [checkElectionQuery] = await db.execute(createElectionQuery, [electionUuid, electionName, organization, uuid ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionQuery);
