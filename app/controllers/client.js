@@ -71,7 +71,7 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let alertMessage = `ELECTION (Draft):\n Election Name: ${electionName} \n Organization Name: ${organization}.`
+        let alertMessage = `ELECTION (Draft):\nElection Name: ${electionName} \nOrganization Name: ${organization}.`
         sendMessageToTelegram('alert', alertMessage);
         return res.status(200).json({
           status: 200,
