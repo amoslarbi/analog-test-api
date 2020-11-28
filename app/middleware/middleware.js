@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const db = require('../database/connection');
 
 // sets headers and permissions for all requests.
 const setHeaders = app => {
@@ -26,7 +27,7 @@ const sessionChecker = (req, res, next) => {
     const bearerToken = bearer[1];
 
     console.dir(bearerToken);
-    jwt.verify(bearerToken, process.env.JWT_KEY, function (error, data) {
+    jwt.verify(bearerToken, process.env.JWT_KEY, async function (error, data) {
       if(error){
         return res.status(401).json({
           status: 401,
@@ -34,14 +35,36 @@ const sessionChecker = (req, res, next) => {
         });
       }
 
-      req.uuid = data.access_data.uuid;
+      let uuid =  data.access_data.uuid;
+
+      let validateUserQuery = "SELECT `id` FROM `users` WHERE `uuid` = ? ";
+      let validateUser;
+      try{
+        [validateUser] = await db.execute(validateUserQuery, [ uuid ]);
+      }catch(error){
+        console.log('SQL-Error: '+error);
+        sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+validateUserQuery);
+        return res.status(500).json({
+          status: 500,
+          message: 'Could not connect to server'
+        });
+      }
+
+      if(validateUser.length === 0){
+        return res.status(401).json({
+          status: 401,
+          message: "authentication invalid"
+        }); 
+      }
+
+      req.uuid = uuid;
       next();
     })
   }else{
     return res.status(401).json({
       status: 401,
       message: "authentication invalid"
-    }); 
+    });
   }
   
   

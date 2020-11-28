@@ -85,6 +85,88 @@ const routes = (app, sessionChecker) => {
   
       // new EC create election end
 
+      // election analytics start
+      app.post(PREFIX+'/get-analytics', sessionChecker, async (req, res) => {
+        const uuid = req.uuid;
+
+        let completedElections = 0;
+        let publishedElections = 0;
+        let draftElections = 0;
+        let totalElections = 0;
+        let totalVoters = 0;
+
+        let electionStatsQuery = "SELECT COUNT(`id`) as `total`, `status` FROM `elections` GROUP BY `status` ";
+        let electionStats;
+        try{
+          [electionStats] = await db.execute(electionStatsQuery, [uuid]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+electionStatsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if(electionStats.length === 0){
+          return res.status(201).json({
+            status: 200,
+            message: 'election analytics ready',
+            data: {
+              published: publishedElections,
+              completed: completedElections,
+              draft: draftElections,
+              voters: totalVoters,
+              totalElections: totalElections
+            }
+          });
+        }
+
+        for(let i = 0; i < electionStats.length; i++){
+          if(electionStats[i].status === 'd'){
+            draftElections = electionStats[i].total;
+          }
+
+          if(electionStats[i].status === 'p'){
+            publishedElections = electionStats[i].total;
+          }
+
+          if(electionStats[i].status === 'e'){
+            completedElections = electionStats[i].total;
+          }
+        }
+
+        totalElections = parseInt(draftElections) + parseInt(publishedElections) + parseInt(completedElections);
+
+        let totalVoterCountsQuery = "SELECT COUNT(DISTINCT(`voter_uuid`)) as `total` FROM `election_voters` WHERE `election_uuid` IN (SELECT `election_uuid` FROM `elections` WHERE `created_by` = ?) ";
+        let totalVotersCount;
+        try{
+          [totalVotersCount] = await db.execute(totalVoterCountsQuery, [uuid]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+totalVoterCountsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        totalVoters = totalVotersCount[0].total;
+
+        return res.status(201).json({
+          status: 200,
+          message: 'election analytics ready',
+          data: {
+            published: publishedElections,
+            completed: completedElections,
+            draft: draftElections,
+            voters: totalVoters,
+            totalElections: totalElections
+          }
+        });
+
+      });
+      // end
 }
 
 module.exports = {
