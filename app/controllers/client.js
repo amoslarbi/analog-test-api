@@ -9,16 +9,10 @@ const Constants = require('../misc/api-constants');
 const PREFIX = "/client";
 
 const routes = (app, sessionChecker) => {
-
-  // app.post(PREFIX+'/create-election', sessionChecker, async (req, res) => {
-  //   const uuid = req.uuid;
-  // });
-
       // new EC create election start
       app.post(PREFIX+'/create-election', sessionChecker, async (req, res) => {
 
         const uuid = req.uuid;
-        console.log(uuid);
         let electionName = req.body.electionName;
         let organization = req.body.organization;
         let electionUuid = uuidv5(electionName, uuidv4());
@@ -68,7 +62,7 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let alertMessage = `${electionName} created for ${organization}.`
+        let alertMessage = `ELECTION (Draft): ${electionName} created for ${organization}.`
         sendMessageToTelegram('alert', alertMessage);
         return res.status(200).json({
           status: 200,
