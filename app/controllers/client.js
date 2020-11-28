@@ -71,11 +71,14 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let alertMessage = `ELECTION (Draft): ${electionName} created for ${organization}.`
+        let alertMessage = `ELECTION (Draft):\n Election Name: ${electionName} \n Organization Name: ${organization}.`
         sendMessageToTelegram('alert', alertMessage);
         return res.status(200).json({
           status: 200,
-          message: "worked"
+          message: "worked",
+          data: {
+            electionUUID: electionUuid
+          }
         });
     
       });
