@@ -95,7 +95,7 @@ const routes = (app, sessionChecker) => {
         let totalElections = 0;
         let totalVoters = 0;
 
-        let electionStatsQuery = "SELECT COUNT(`id`) as `total`, `status` FROM `elections` GROUP BY `status` ";
+        let electionStatsQuery = "SELECT COUNT(`id`) as `total`, `status` FROM `elections` WHERE `created_by` = ? GROUP BY `status` ";
         let electionStats;
         try{
           [electionStats] = await db.execute(electionStatsQuery, [uuid]);
@@ -163,6 +163,54 @@ const routes = (app, sessionChecker) => {
             voters: totalVoters,
             totalElections: totalElections
           }
+        });
+
+      });
+      // end
+
+      // get user's elections start
+      app.post(PREFIX+'/get-dashboard-election', sessionChecker, async (req, res) => {
+        const uuid = req.uuid;
+
+        let getElectionsQuery = "SELECT * FROM `elections` WHERE `created_by` = ? AND `status` != 'c' ORDER BY `status` DESC LIMIT 5";
+        let getElections;
+        try{
+          [getElections] = await db.execute(getElectionsQuery, [uuid]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getElectionsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if(getElections.length === 0){
+          return res.status(201).json({
+            status: 201,
+            message: 'elections ready',
+            data: []
+          });
+        }
+
+        let elections = []
+
+        for(let i = 0; i < getElections.length; i++){
+          elections.push({
+            icon: getElections[i].icon,
+            name: getElections[i].name,
+            organization_name: getElections[i].organization_name,
+            start_time: getElections[i].start_time,
+            end_time: getElections[i].end_time,
+            show_result: getElections[i].show_result,
+            status: getElections[i].status
+          })
+        }
+
+        return res.status(201).json({
+          status: 200,
+          message: 'elections ready',
+          data: elections
         });
 
       });
