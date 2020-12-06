@@ -197,12 +197,14 @@ const routes = (app, sessionChecker) => {
 
         for(let i = 0; i < getElections.length; i++){
           elections.push({
+            election: getElections[i].election_uuid,
             icon: getElections[i].icon,
             name: getElections[i].name,
             organization_name: getElections[i].organization_name,
             start_time: getElections[i].start_time,
             end_time: getElections[i].end_time,
             show_result: getElections[i].show_result,
+            voters: 0,
             status: getElections[i].status
           })
         }
