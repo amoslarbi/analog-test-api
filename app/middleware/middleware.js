@@ -26,7 +26,6 @@ const sessionChecker = (req, res, next) => {
     const bearer = bearerHeader.split(' ');
     const bearerToken = bearer[1];
 
-    console.dir(bearerToken);
     jwt.verify(bearerToken, process.env.JWT_KEY, async function (error, data) {
       if(error){
         return res.status(401).json({
