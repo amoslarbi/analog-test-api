@@ -510,25 +510,46 @@ const routes = (app, sessionChecker) => {
   
       // insert information start
       app.post(PREFIX+'/information', sessionChecker, async (req, res) => {
-
+        app.use(cors());
+        
         const uuid = req.uuid;
+        console.log(req);
+        let ballotIcon;
+
+        singleUpload(req, res, function (err) {
+          if (err) {
+            return res.json({
+              success: false,
+              errors: {
+                title: "Image Upload Error",
+                detail: err.message,
+                error: err,
+              },
+            });
+          }
+
+          ballotIcon = { profilePicture: req.file.location };
+      
+        });
+
         let electionUUID = req.body.electionUUID;
+        console.log(electionUUID);
         let name = req.body.name;
         let organization_name = req.body.organization_name;
         let duration = req.body.duration;
         let declaration = req.body.declaration;
-        let declarationKyiv;
+        let declarationStatus;
         if(declaration == "show"){
-          declarationKyiv = 1
+          declarationStatus = 1
         }
         else{
-          declarationKyiv = 0
+          declarationStatus = 0
         }
 
-        let getDuration = [];
-        getDuration = duration;
-        let start_time = getDuration[0];
-        let end_time = getDuration[1];
+        // let getDuration = [];
+        // getDuration = duration;
+        // let start_time = getDuration[0];
+        // let end_time = getDuration[1];
 
         // let durationKyiv = duration.split(' ');
         // // let start_time_day = durationKyiv[0].split(',');
@@ -595,7 +616,7 @@ const routes = (app, sessionChecker) => {
         //   });
         // }
 
-        // let errorMessage = "Error: Sorry, failed to create election";
+        let errorMessage = "Error: Sorry, failed to create election";
     
         // if (checkInformationElectionNameQuery.length === 1) {
         //   errorCount++;
@@ -610,10 +631,10 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let updateInformationElectionQuery = "UPDATE elections SET `name` = ?, `organization_name` = ?, `start_time` = ?, `end_time` = ?, `show_result` = ?";
+        let updateInformationElectionQuery = "UPDATE elections SET `icon` = ?, `name` = ?, `organization_name` = ?, `start_time` = ?, `end_time` = ?, `show_result` = ?";
         let checkUpdateInformationElectionQuery;
         try{
-          [checkUpdateInformationElectionQuery] = await db.execute(updateInformationElectionQuery, [ name, organization_name, start_time, end_time, declarationKyiv ]);
+          [checkUpdateInformationElectionQuery] = await db.execute(updateInformationElectionQuery, [ ballotIcon, name, organization_name, start_time, end_time, declarationStatus ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateInformationElectionQuery);
@@ -629,7 +650,7 @@ const routes = (app, sessionChecker) => {
           status: 200,
           message: "worked",
         });
-    
+
       });
   
       // insert information end
