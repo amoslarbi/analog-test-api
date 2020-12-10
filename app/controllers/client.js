@@ -526,7 +526,7 @@ const routes = (app, sessionChecker) => {
             });
           }
 
-        ballotIcon = { profilePicture: req.file.location };
+        ballotIcon = req.file.location;
         console.dir(ballotIcon);
         console.log(req.body.name);
 
@@ -536,10 +536,11 @@ const routes = (app, sessionChecker) => {
         // });
 
         let electionUUID = req.body.electionUUID;
-        console.log(electionUUID);
+        
         let name = req.body.name;
         let organization_name = req.body.organization_name;
-        let duration = req.body.duration;
+        let start_time = req.body.start_time;
+        let end_time = req.body.end_time;
         let declaration = req.body.declaration;
         let declarationStatus;
         if(declaration == "show"){
@@ -551,8 +552,8 @@ const routes = (app, sessionChecker) => {
 
         // let getDuration = [];
         // getDuration = duration;
-        let start_time = getDuration[0];
-        let end_time = getDuration[1];
+        // let start_time = getDuration[0];
+        // let end_time = getDuration[1];
 
         // let durationKyiv = duration.split(' ');
         // // let start_time_day = durationKyiv[0].split(',');
@@ -581,10 +582,10 @@ const routes = (app, sessionChecker) => {
           errorInfo.organization_name = "Enter organization / group name";
         }
 
-        if(duration.length === 0){
-          errorCount++;
-          errorInfo.duration = "Enter duration";
-        }
+        // if(duration.length === 0){
+        //   errorCount++;
+        //   errorInfo.duration = "Enter duration";
+        // }
 
         let checkInformationElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
         let checkInformationElectionUUID;
