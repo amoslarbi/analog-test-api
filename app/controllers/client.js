@@ -2,7 +2,7 @@ const db = require('../database/connection');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
 const upload = require("../utilities/image-upload");
-const singleUpload = upload.single("ballotIcon");
+const ballotIconUpload = upload.single("ballotIcon");
 const {
   trim,
   sendMessageToTelegram,
@@ -515,7 +515,7 @@ const routes = (app, sessionChecker) => {
         const uuid = req.uuid;
         let ballotIcon;
 
-        singleUpload(req, res, function (err) {
+        ballotIconUpload(req, res, function (err) {
           if (err) {
             return res.json({
               success: false,
