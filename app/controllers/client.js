@@ -531,6 +531,7 @@ const routes = (app, sessionChecker) => {
 
           ballotIcon = { profilePicture: req.file.location };
           console.dir(ballotIcon);
+          console.log(req.body.name)
           return res.status(400).json({
             status: 400,
             message: "Invalid election ID"
