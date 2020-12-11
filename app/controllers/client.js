@@ -2,6 +2,7 @@ const db = require('../database/connection');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
 const upload = require("../utilities/image-upload");
+const electionIconUpload = upload.single("electionIcon");
 const ballotIconUpload = upload.single("ballotIcon");
 const {
   trim,
@@ -575,12 +576,11 @@ const routes = (app, sessionChecker) => {
   
       // insert information start
       app.post(PREFIX+'/information', sessionChecker, async (req, res) => {
-        // console.log(req);
 
         const uuid = req.uuid;
-        let ballotIcon;
+        let electionIcon;
 
-        ballotIconUpload(req, res, async function (err) {
+        electionIconUpload(req, res, async function (err) {
           if (err) {
             return res.json({
               success: false,
@@ -592,8 +592,8 @@ const routes = (app, sessionChecker) => {
             });
           }
 
-        ballotIcon = req.file.location;
-        console.dir(ballotIcon);
+        electionIcon = req.file.location;
+        console.dir(electionIcon);
         console.log(req.body.name);
 
         // return res.status(400).json({
@@ -704,7 +704,7 @@ const routes = (app, sessionChecker) => {
         let updateInformationElectionQuery = "UPDATE elections SET `icon` = ?, `name` = ?, `organization_name` = ?, `start_time` = ?, `end_time` = ?, `show_result` = ?";
         let checkUpdateInformationElectionQuery;
         try{
-          [checkUpdateInformationElectionQuery] = await db.execute(updateInformationElectionQuery, [ ballotIcon, name, organization_name, start_time, end_time, declarationStatus ]);
+          [checkUpdateInformationElectionQuery] = await db.execute(updateInformationElectionQuery, [ electionIcon, name, organization_name, start_time, end_time, declarationStatus ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateInformationElectionQuery);
@@ -726,6 +726,106 @@ const routes = (app, sessionChecker) => {
       });
   
       // insert information end
+
+      // insert ballot start
+      app.post(PREFIX+'/ballot', sessionChecker, async (req, res) => {
+
+        const uuid = req.uuid;
+        let ballotIcon;
+
+        ballotIconUpload(req, res, async function (err) {
+          if (err) {
+            return res.json({
+              success: false,
+              errors: {
+                title: "Image Upload Error",
+                detail: err.message,
+                error: err,
+              },
+            });
+          }
+
+        ballotIcon = req.file.location;
+
+        let electionUUID = req.body.electionUUID;
+        let ballotName = req.body.ballotName;
+        let ballotDescription = req.body.ballotDescription;
+        let ballotPosition = req.body.ballotPosition;
+        let ballotUUID = uuidv5(ballotName, uuidv4());
+
+        let errorInfo = {}
+        let errorCount = 0;
+
+        if(ballotName.length === 0){
+          errorCount++;
+          errorInfo.ballotName = "Enter ballot name";
+        }
+    
+        if(ballotDescription.length === 0){
+          errorCount++;
+          errorInfo.ballotDescription = "Enter ballot description";
+        }
+
+        if(ballotPosition.length === 0){
+          errorCount++;
+          errorInfo.ballotPosition = "Enter ballot position";
+        }
+
+        let checkBallotElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkBallotElectionUUID;
+        try{
+          [checkBallotElectionUUID] = await db.execute(checkBallotElectionUUIDQuery, [ electionUUID, uuid ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotElectionUUIDQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if (checkBallotElectionUUID.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "Invalid election ID"
+          });
+        }
+
+        let errorMessage = "Error: Sorry, failed to create ballot";
+
+        if(errorCount > 0){
+          return res.status(400).json({
+            status: 400,
+            message: errorMessage,
+            errors: errorInfo
+          });
+        }
+    
+        let postBallotQuery = "INSERT INTO `ballots` (`ballot_uuid`, `election_uuid`, `slot_number`, `name`, `description`, `avatar`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW())";
+        let checkBallotQuery;
+        try{
+          [checkBallotQuery] = await db.execute(postBallotQuery, [ ballotUUID, electionUUID, ballotPosition, ballotName, ballotDescription, ballotIcon ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+postBallotQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+    
+        let alertMessage = `ELECTION (Draft):\n Ballot Name: ${ballotName} \n Ballot Description: ${ballotDescription}.`
+        sendMessageToTelegram('alert', alertMessage);
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+        });
+
+      });
+
+      });
+  
+      // insert ballot end
 }
 
 module.exports = {
