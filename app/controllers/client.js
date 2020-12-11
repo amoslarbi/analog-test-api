@@ -466,6 +466,72 @@ const routes = (app, sessionChecker) => {
       });
       // end
 
+       // get elections by type start
+       app.post(PREFIX+'/get-elections', sessionChecker, async (req, res) => {
+        const uuid = req.uuid;
+        let electionStatus = req.body.electionStatus;
+        const page = req.body.page;
+
+        switch (electionStatus) {
+          case 'draft':
+            electionStatus = 'd'
+            break;
+
+          case 'published':
+            electionStatus = 'p'
+            break;
+
+          case 'completed':
+            electionStatus = 'e'
+            break;
+        
+          default:
+            electionStatus = 'p'
+            break;
+        }
+
+        let getElectionsQuery = "SELECT * FROM `elections` WHERE `created_by` = ? AND `status` = ? ORDER BY `updated_at` DESC LIMIT 10";
+        let getElections;
+        try{
+          [getElections] = await db.execute(getElectionsQuery, [uuid, electionStatus]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getElectionsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if(getElections.length === 0){
+          return res.status(201).json({
+            status: 201,
+            message: 'elections ready',
+            data: []
+          });
+        }
+
+        let elections = []
+
+        for(let i = 0; i < getElections.length; i++){
+          let election_uuid = getElections[i].election_uuid;
+
+          let electionInfo = await getElectionCardInfo(election_uuid, uuid);
+          if(electionInfo.status === 200){
+            elections.push(electionInfo.data)
+          }
+
+        }
+
+        return res.status(201).json({
+          status: 200,
+          message: 'elections ready',
+          data: elections
+        });
+
+      });
+      // end
+
       // verify election UUID start
       app.post(PREFIX+'/verify-election-uuid', sessionChecker, async (req, res) => {
         console.dir(req.body)
@@ -549,8 +615,8 @@ const routes = (app, sessionChecker) => {
           declarationStatus = 0
         }
 
-        // let getDuration = [];
-        // getDuration = duration;
+        let getDuration = [];
+        getDuration = duration;
         let start_time = getDuration[0];
         let end_time = getDuration[1];
 
