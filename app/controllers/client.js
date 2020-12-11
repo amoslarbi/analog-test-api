@@ -593,7 +593,7 @@ const routes = (app, sessionChecker) => {
           }
 
           if (!req.file) {
-            electionIcon = '';
+            electionIcon = null;
           }else{
             electionIcon = req.file.location;
           }
@@ -644,6 +644,11 @@ const routes = (app, sessionChecker) => {
           if(organization_name.length === 0){
             errorCount++;
             errorInfo.organization_name = "Enter organization / group name";
+          }
+
+          if(start_time.length === 0 || end_time.length === 0){
+            errorCount++;
+            errorInfo.name = "Enter duration name";
           }
 
           let checkInformationElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
@@ -706,9 +711,10 @@ const routes = (app, sessionChecker) => {
               message: 'Could not connect to server..'
             });
           }
+          
       
-          let alertMessage = `ELECTION (Draft):\n Election Name: ${name} \n Organization Name: ${organization_name}.`
-          sendMessageToTelegram('alert', alertMessage);
+          // let alertMessage = `ELECTION (Draft):\n Election Name: ${name} \n Organization Name: ${organization_name}.`
+          // sendMessageToTelegram('alert', alertMessage);
           return res.status(200).json({
             status: 200,
             message: "worked",
