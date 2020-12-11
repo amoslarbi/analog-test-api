@@ -363,7 +363,7 @@ const routes = (app, sessionChecker) => {
 
         if(electionStats.length === 0){
           return res.status(201).json({
-            status: 200,
+            status: 201,
             message: 'election analytics ready',
             data: {
               published: publishedElections,
@@ -406,7 +406,7 @@ const routes = (app, sessionChecker) => {
 
         totalVoters = totalVotersCount[0].total;
 
-        return res.status(201).json({
+        return res.status(200).json({
           status: 200,
           message: 'election analytics ready',
           data: {
@@ -458,7 +458,7 @@ const routes = (app, sessionChecker) => {
 
         }
 
-        return res.status(201).json({
+        return res.status(200).json({
           status: 200,
           message: 'elections ready',
           data: elections
@@ -471,7 +471,11 @@ const routes = (app, sessionChecker) => {
        app.post(PREFIX+'/get-elections', sessionChecker, async (req, res) => {
         const uuid = req.uuid;
         let electionStatus = req.body.electionStatus;
-        const page = req.body.page;
+        let page = req.body.page;
+
+        if(!req.body.page){
+          page = 1;
+        }
 
         switch (electionStatus) {
           case 'draft':
@@ -491,10 +495,17 @@ const routes = (app, sessionChecker) => {
             break;
         }
 
-        let getElectionsQuery = "SELECT * FROM `elections` WHERE `created_by` = ? AND `status` = ? ORDER BY `updated_at` DESC LIMIT 10";
+        let limit;
+        if(page === 1){
+          limit = 0;
+        }else{
+          limit = parseInt(page - 1) * 10;
+        }
+
+        let getElectionsQuery = "SELECT * FROM `elections` WHERE `created_by` = ? AND `status` = ? ORDER BY `updated_at` DESC LIMIT ?,10";
         let getElections;
         try{
-          [getElections] = await db.execute(getElectionsQuery, [uuid, electionStatus]);
+          [getElections] = await db.execute(getElectionsQuery, [uuid, electionStatus, limit]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getElectionsQuery);
@@ -508,7 +519,23 @@ const routes = (app, sessionChecker) => {
           return res.status(201).json({
             status: 201,
             message: 'elections ready',
-            data: []
+            data: [],
+            meta: {
+              total_elections: 0
+            },
+          });
+        }
+
+        let getElectionsCountQuery = "SELECT COUNT(`id`) as `total_count` FROM `elections` WHERE `created_by` = ? AND `status` = ? ";
+        let getElectionsCount;
+        try{
+          [getElectionsCount] = await db.execute(getElectionsCountQuery, [uuid, electionStatus]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getElectionsCountQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
           });
         }
 
@@ -524,9 +551,12 @@ const routes = (app, sessionChecker) => {
 
         }
 
-        return res.status(201).json({
+        return res.status(200).json({
           status: 200,
           message: 'elections ready',
+          meta: {
+            total_elections: getElectionsCount[0].total_count
+          },
           data: elections
         });
 
