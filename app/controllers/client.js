@@ -603,6 +603,111 @@ const routes = (app, sessionChecker) => {
     
       });
       // verify election UUID end
+
+      // get ballots
+      app.post(PREFIX+'/get-ballots', sessionChecker, async (req, res) => {
+        // console.dir(req.body)
+        // const uuid = req.uuid;
+        let electionUUID = trim(req.body.electionUUID);
+    
+        let makeGetBallotsQuery = "SELECT * FROM ballots WHERE `election_uuid` = ?";
+        let checGetBallotsQuery;
+        try{
+          [checGetBallotsQuery] = await db.execute(makeGetBallotsQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeGetBallotsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checGetBallotsQuery.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "empty"
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          ballot_obj: {
+            list: checGetBallotsQuery
+          },
+        });
+    
+      });
+      // get ballots end
+
+      // delete ballot start
+      app.post(PREFIX+'/delete-ballot', sessionChecker, async (req, res) => {
+        // console.dir(req.body)
+        // const uuid = req.uuid;
+        let ballotUUID = trim(req.body.ballotUUID);
+        let electionUUID = trim(req.body.electionUUID);
+        console.log(ballotUUID);
+        console.log(electionUUID);
+    
+        let makeDeleteBallotsQuery = "DELETE FROM ballots WHERE `ballot_uuid` = ?";
+        let checDeleteBallotsQuery;
+        try{
+          [checDeleteBallotsQuery] = await db.execute(makeDeleteBallotsQuery, [ ballotUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeDeleteBallotsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checDeleteBallotsQuery.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "failed"
+          });
+        }
+
+        let makeGetBallotsQuery = "SELECT * FROM ballots WHERE `election_uuid` = ?";
+        let checkGetBallotsQuery;
+        try{
+          [checkGetBallotsQuery] = await db.execute(makeGetBallotsQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeGetBallotsQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checkGetBallotsQuery.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "empty"
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          ballot_obj: {
+            list: checGetBallotsQuery
+          },
+        });
+    
+        // return res.status(200).json({
+        //   status: 200,
+        //   message: "worked",
+        //   ballot_obj: {
+        //     list: checGetBallotsQuery
+        //   },
+        // });
+    
+      });
+      // delete ballot end
   
       // insert information start
       app.post(PREFIX+'/information', sessionChecker, async (req, res) => {
