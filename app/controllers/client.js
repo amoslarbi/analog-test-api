@@ -563,13 +563,12 @@ const routes = (app, sessionChecker) => {
       });
       // end
 
-      // verify election UUID start
-      app.post(PREFIX+'/verify-election-uuid', sessionChecker, async (req, res) => {
-        console.dir(req.body)
+      // get election information by UUID start
+      app.post(PREFIX+'/get-election-details', sessionChecker, async (req, res) => {
         const uuid = req.uuid;
-        let electionUUID = trim(req.body.electionUUID);
+        let electionUUID = trim(req.body.election);
     
-        let checkElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkElectionUUIDQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
         let checkElectionUUID;
         try{
           [checkElectionUUID] = await db.execute(checkElectionUUIDQuery, [ electionUUID, uuid ]);
@@ -589,20 +588,16 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let name = checkElectionUUID[0].name;
-        let organization_name = checkElectionUUID[0].organization_name;
+        let electionInfo = await getElectionCardInfo(electionUUID, uuid);
     
         return res.status(200).json({
           status: 200,
-          message: "worked",
-          election_obj: {
-            name: name,
-            organization_name: organization_name,
-          },
+          message: "election details ready",
+          data: electionInfo.data,
         });
     
       });
-      // verify election UUID end
+      // get election details by UUID end
 
       // get ballots
       app.post(PREFIX+'/get-ballots', sessionChecker, async (req, res) => {
