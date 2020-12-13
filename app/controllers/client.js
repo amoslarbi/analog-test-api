@@ -780,7 +780,7 @@ const routes = (app, sessionChecker) => {
 
           if(start_time.length === 0 || end_time.length === 0){
             errorCount++;
-            errorInfo.name = "Enter duration name";
+            errorInfo.duration = "Enter election duration";
           }
 
           let checkInformationElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
