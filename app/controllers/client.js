@@ -248,6 +248,9 @@ const getElectionCardInfo = async(electionUuid, uuid) => {
     start_time: getElection[0].start_time,
     end_time: getElection[0].end_time,
     show_result: getElection[0].show_result,
+    information_status: getElection[0].information_status,
+    ballot_status: getElection[0].ballot_status,
+    voters_status: getElection[0].voters_status,
     voters: voters,
     status: status,
     status_info: status_info
