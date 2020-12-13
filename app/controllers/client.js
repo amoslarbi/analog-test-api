@@ -795,7 +795,13 @@ const routes = (app, sessionChecker) => {
 
           let server_start_time = moment(start_time).format("YYYY-MM-DD HH:mm:ss");
           let server_end_time = moment(end_time).format("YYYY-MM-DD HH:mm:ss");
+          let currentTime = moment().format("YYYY-MM-DD HH:mm:ss");
           // check to make sure dates are not in the past
+
+          if(moment(server_start_time).isBefore(currentTime) || moment(server_end_time).isBefore(server_start_time)){
+            errorCount++;
+            errorInfo.duration = "Election start and end time is invalid";
+          }
 
 
           let checkInformationElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
