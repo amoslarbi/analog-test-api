@@ -1,5 +1,9 @@
 const jwt = require('jsonwebtoken');
 const db = require('../database/connection');
+const {
+  trim,
+  sendMessageToTelegram,
+} = require('../utilities/utilities');
 
 // sets headers and permissions for all requests.
 const setHeaders = app => {

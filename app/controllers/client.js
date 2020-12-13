@@ -2,6 +2,7 @@ const db = require('../database/connection');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
 const upload = require("../utilities/image-upload");
+var moment = require('moment-timezone');
 const electionIconUpload = upload.single("electionIcon");
 const ballotIconUpload = upload.single("ballotIcon");
 const {
@@ -247,7 +248,7 @@ const getElectionCardInfo = async(electionUuid, uuid) => {
     organization_name: getElection[0].organization_name,
     start_time: getElection[0].start_time,
     end_time: getElection[0].end_time,
-    show_result: getElection[0].show_result,
+    show_result: getElection[0].show_result === '0' ? 'hide' : 'show',
     information_status: getElection[0].information_status,
     ballot_status: getElection[0].ballot_status,
     voters_status: getElection[0].voters_status,
@@ -713,10 +714,13 @@ const routes = (app, sessionChecker) => {
         const uuid = req.uuid;
         let electionIcon;
 
+        
+
         electionIconUpload(req, res, async function (err) {
           if (err) {
-            return res.json({
-              success: false,
+            return res.status(400).json({
+              status: 400,
+              message: "Election icon upload error",
               errors: {
                 title: "Image Upload Error",
                 detail: err.message,
@@ -725,13 +729,38 @@ const routes = (app, sessionChecker) => {
             });
           }
 
+          let electionUUID = req.body.electionUUID;
+
           if (!req.file) {
+            let checkElectionIconQuery = "SELECT `id`, `icon` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+            let checkElectionIcon;
+            try{
+              [checkElectionIcon] = await db.execute(checkElectionIconQuery, [ electionUUID, uuid ]);
+            }catch(error){
+              console.log('SQL-Error: '+error);
+              sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionIconQuery);
+              return res.status(500).json({
+                status: 500,
+                message: 'Could not connect to server'
+              });
+            }
+
+            if (checkElectionIcon.length === 0) {
+              return res.status(400).json({
+                status: 400,
+                message: "Invalid election information"
+              });
+            }
+
             electionIcon = null;
+            if(checkElectionIcon[0].icon !== null){
+              electionIcon = checkElectionIcon[0].icon;
+            }
+
           }else{
             electionIcon = req.file.location;
           }
-
-          let electionUUID = req.body.electionUUID;
+          
           
           let name = req.body.name;
           let organization_name = req.body.organization_name;
@@ -740,30 +769,11 @@ const routes = (app, sessionChecker) => {
           let declaration = req.body.declaration;
           let declarationStatus;
           if(declaration == "show"){
-            declarationStatus = 1
+            declarationStatus = '1';
           }
           else{
-            declarationStatus = 0
+            declarationStatus = '0';
           }
-
-          // let getDuration = [];
-          // getDuration = duration;
-          // let start_time = getDuration[0];
-          // let end_time = getDuration[1];
-
-          // let durationKyiv = duration.split(' ');
-          // // let start_time_day = durationKyiv[0].split(',');
-          // let start_time_month = durationKyiv[1].split(',');
-          // let start_time_day = durationKyiv[2].split(',');
-          // let start_time_year = durationKyiv[3].split(',');
-          // let start_time_time = durationKyiv[4].split(',');
-          // let start_time = start_time_month + " " + start_time_day + " " + start_time_year + " " + start_time_time;
-
-          // let end_time_month = durationKyiv[6].split(',');
-          // let end_time_day = durationKyiv[7].split(',');
-          // let end_time_year = durationKyiv[8].split(',');
-          // let end_time_time = durationKyiv[9].split(',');
-          // let end_time = end_time_month + " " + end_time_day + " " + end_time_year + " " + end_time_time;
 
           let errorInfo = {}
           let errorCount = 0;
@@ -783,6 +793,11 @@ const routes = (app, sessionChecker) => {
             errorInfo.duration = "Enter election duration";
           }
 
+          let server_start_time = moment(start_time).format("YYYY-MM-DD HH:mm:ss");
+          let server_end_time = moment(end_time).format("YYYY-MM-DD HH:mm:ss");
+          // check to make sure dates are not in the past
+
+
           let checkInformationElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
           let checkInformationElectionUUID;
           try{
@@ -799,29 +814,29 @@ const routes = (app, sessionChecker) => {
           if (checkInformationElectionUUID.length === 0) {
             return res.status(400).json({
               status: 400,
-              message: "Invalid election ID"
+              message: "Invalid election information"
             });
           }
       
-          // let informationElectionNameQuery = "SELECT * FROM `elections` WHERE (`name` = ? AND `organization_name` = ?) AND `created_by` = ?  ";
-          // let checkInformationElectionNameQuery;
-          // try{
-          //   [checkInformationElectionNameQuery] = await db.execute(informationElectionNameQuery, [ name, organization_name, uuid ]);
-          // }catch(error){
-          //   console.log('SQL-Error: '+error);
-          //   sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+informationElectionNameQuery);
-          //   return res.status(500).json({
-          //     status: 500,
-          //     message: 'Could not connect to server'
-          //   });
-          // }
+          let checkElectionNameQuery = "SELECT `id` FROM `elections` WHERE `name` = ? AND `created_by` = ? AND `election_uuid` != ? ";
+          let checkElectionName;
+          try{
+            [checkElectionName] = await db.execute(checkElectionNameQuery, [ name, uuid, electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionNameQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
 
-          let errorMessage = "Error: Sorry, failed to create election";
+          let errorMessage = "Error: Sorry, failed to update election information";
       
-          // if (checkInformationElectionNameQuery.length === 1) {
-          //   errorCount++;
-          //   errorMessage = "You already have an election with the same name and organization/group name.";
-          // }
+          if (checkElectionName.length === 1) {
+            errorCount++;
+            errorInfo.name = "You already have an election with the same name";
+          }
 
           if(errorCount > 0){
             return res.status(400).json({
@@ -831,10 +846,10 @@ const routes = (app, sessionChecker) => {
             });
           }
       
-          let updateInformationElectionQuery = "UPDATE elections SET `icon` = ?, `name` = ?, `organization_name` = ?, `start_time` = ?, `end_time` = ?, `show_result` = ?";
+          let updateInformationElectionQuery = "UPDATE elections SET `icon` = ?, `name` = ?, `organization_name` = ?, `start_time` = ?, `end_time` = ?, `server_start_time` = ?, `server_end_time` = ?, `show_result` = ?, `information_status` = '1'  WHERE `election_uuid` = ? AND `created_by` = ? ";
           let checkUpdateInformationElectionQuery;
           try{
-            [checkUpdateInformationElectionQuery] = await db.execute(updateInformationElectionQuery, [ electionIcon, name, organization_name, start_time, end_time, declarationStatus ]);
+            [checkUpdateInformationElectionQuery] = await db.execute(updateInformationElectionQuery, [ electionIcon, name, organization_name, start_time, end_time, server_start_time, server_end_time, declarationStatus, electionUUID, uuid ]);
           }catch(error){
             console.log('SQL-Error: '+error);
             sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateInformationElectionQuery);
@@ -844,9 +859,6 @@ const routes = (app, sessionChecker) => {
             });
           }
           
-      
-          // let alertMessage = `ELECTION (Draft):\n Election Name: ${name} \n Organization Name: ${organization_name}.`
-          // sendMessageToTelegram('alert', alertMessage);
           return res.status(200).json({
             status: 200,
             message: "worked",
