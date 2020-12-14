@@ -640,6 +640,175 @@ const routes = (app, sessionChecker) => {
       });
       // get ballots end
 
+      // add voters start
+      app.post(PREFIX+'/add-voter', sessionChecker, async (req, res) => {
+        const uuid = req.uuid;
+        let electionUUID = trim(req.body.electionUUID);
+        let voterEmail = trim(req.body.voterEmail);
+
+        // check elections table if the EC about to add voters is the owner of that election
+    
+        let checkECQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkECQueryResult;
+        try{
+          [checkECQueryResult] = await db.execute(checkECQuery, [ electionUUID, uuid ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkECQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checkECQueryResult.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "not you"
+          });
+        }
+
+        // check the voters table if that voter already exist
+
+        let checkVotersTableQuery = "SELECT id, email FROM voters WHERE `email` = ?";
+        let checkVotersTableQueryResult;
+        try{
+          [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersTableQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if (checkVotersTableQueryResult.length === 1) {
+          let voter_uuid = checkLoginQuery[0].voter_uuid;
+
+          // check the election voters table to see if that voter already exist
+
+          let checkElectionVotersTableQuery = "SELECT * FROM election_voters WHERE `voter_uuid` = ? AND `election_uuid` = ?";
+          let checkElectionVotersTableQueryResult;
+          try{
+            [checkElectionVotersTableQueryResult] = await db.execute(checkElectionVotersTableQuery, [ voter_uuid, electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionVotersTableQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
+
+          // if voter already exist in the voters and election voters table, prompt EC
+  
+          if (checkElectionVotersTableQueryResult.length === 1) {
+            return res.status(400).json({
+              status: 400,
+              message: "voter already exist"
+            });
+          }
+
+          // add voter to the election voters table if voter is not present
+
+          let addToElectionVotersTableQuery = "INSERT INTO `election_voters` (`election_uuid`, `voter_uuid`, `created_at`) VALUES(?, ?, NOW())";
+          let addToElectionVotersTableQueryResult;
+          try{
+            [addToElectionVotersTableQueryResult] = await db.execute(addToElectionVotersTableQuery, [ electionUUID, voter_uuid ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToElectionVotersTableQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server..'
+            });
+          }
+
+        // get voters
+
+        let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
+        let getVotersQueryResult;
+        try{
+          [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          voter_obj: {
+            list: getVotersQueryResult
+          },
+        });
+
+        }
+
+        // add voter to the voters table if voter
+        let newVoterUUID = uuidv5(voterEmail, uuidv4());
+        let voterName = trim(req.body.voterName);
+        let voterPhoneNumber = trim(req.body.voterPhoneNumber);
+
+        let addToVotersTableQuery = "INSERT INTO `voters` (`voter_uuid`, `fullname`, `email`, `phone_number`, `created_at`) VALUES(?, ?, ?, ?, NOW())";
+        let addToVotersTableQueryResult;
+        try{
+          [addToVotersTableQueryResult] = await db.execute(addToVotersTableQuery, [ newVoterUUID, voterName, voterEmail, voterPhoneNumber ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToVotersTableQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+
+        // add voter to the election voters table
+
+        let addNewToElectionVotersTableQuery = "INSERT INTO `election_voters` (`election_uuid`, `voter_uuid`, `created_at`) VALUES(?, ?, NOW())";
+        let addNewToElectionVotersTableQueryResult;
+        try{
+          [addNewToElectionVotersTableQueryResult] = await db.execute(addNewToElectionVotersTableQuery, [ electionUUID, newVoterUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addNewToElectionVotersTableQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+
+        // get voters
+
+        let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
+        let getVotersQueryResult;
+        try{
+          [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          voter_obj: {
+            list: getVotersQueryResult
+          },
+        });
+    
+      });
+      // add voters end
+
       // delete ballot start
       app.post(PREFIX+'/delete-ballot', sessionChecker, async (req, res) => {
         // console.dir(req.body)
