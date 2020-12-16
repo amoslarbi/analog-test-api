@@ -662,7 +662,25 @@ const routes = (app, sessionChecker) => {
       app.post(PREFIX+'/add-voter', sessionChecker, async (req, res) => {
         const uuid = req.uuid;
         let electionUUID = trim(req.body.electionUUID);
+        let voterName = trim(req.body.voterName);
         let voterEmail = trim(req.body.voterEmail);
+        let newVoterUUID = uuidv5(voterEmail, uuidv4());
+        let voterPhoneNumber = trim(req.body.voterPhoneNumber);
+
+        if(voterName.length === 0){
+          errorCount++;
+          errorInfo.voterName = "Enter voter name";
+        }
+
+        if(voterEmail.length === 0){
+          errorCount++;
+          errorInfo.voterEmail = "Enter voter email name";
+        }
+
+        if(voterPhoneNumber.length === 0){
+          errorCount++;
+          errorInfo.voterPhoneNumber = "Enter voter phone number";
+        }
 
         // check elections table if the EC about to add voters is the owner of that election
     
@@ -769,9 +787,6 @@ const routes = (app, sessionChecker) => {
         }
 
         // add voter to the voters table if voter
-        let newVoterUUID = uuidv5(voterEmail, uuidv4());
-        let voterName = trim(req.body.voterName);
-        let voterPhoneNumber = trim(req.body.voterPhoneNumber);
 
         let addToVotersTableQuery = "INSERT INTO `voters` (`voter_uuid`, `fullname`, `email`, `phone_number`, `created_at`) VALUES(?, ?, ?, ?, NOW())";
         let addToVotersTableQueryResult;
