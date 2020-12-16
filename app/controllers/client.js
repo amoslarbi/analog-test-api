@@ -829,68 +829,78 @@ const routes = (app, sessionChecker) => {
 
       // delete ballot start
       app.post(PREFIX+'/delete-ballot', sessionChecker, async (req, res) => {
-        // console.dir(req.body)
-        // const uuid = req.uuid;
-        let ballotUUID = trim(req.body.ballotUUID);
-        let electionUUID = trim(req.body.electionUUID);
+        const uuid = req.uuid;
+        let ballotUUID = trim(req.body.ballot);
+        let electionUUID = trim(req.body.election);
         console.log(ballotUUID);
         console.log(electionUUID);
-    
-        let makeDeleteBallotsQuery = "DELETE FROM ballots WHERE `ballot_uuid` = ?";
-        let checDeleteBallotsQuery;
+
+        let checkElectionUUIDQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkElectionUUID;
         try{
-          [checDeleteBallotsQuery] = await db.execute(makeDeleteBallotsQuery, [ ballotUUID ]);
+          [checkElectionUUID] = await db.execute(checkElectionUUIDQuery, [ electionUUID, uuid ]);
         }catch(error){
           console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeDeleteBallotsQuery);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionUUIDQuery);
           return res.status(500).json({
             status: 500,
             message: 'Could not connect to server'
           });
         }
     
-        if (checDeleteBallotsQuery.length === 0) {
+        if (checkElectionUUID.length === 0) {
           return res.status(400).json({
             status: 400,
-            message: "failed"
+            message: "Invalid ballot information"
+          });
+        }
+    
+        let deleteBallotQuery = "DELETE FROM `ballots` WHERE `ballot_uuid` = ? AND `election_uuid` = ?";
+        let deleteBallot;
+        try{
+          [deleteBallot] = await db.execute(deleteBallotQuery, [ ballotUUID, electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+deleteBallotQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (deleteBallot.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "Invalid ballot information"
           });
         }
 
-        let makeGetBallotsQuery = "SELECT * FROM ballots WHERE `election_uuid` = ?";
-        let checkGetBallotsQuery;
+        let getBallotsQuery = "SELECT * FROM ballots WHERE `election_uuid` = ? ORDER BY `name` ASC";
+        let getBallots;
         try{
-          [checkGetBallotsQuery] = await db.execute(makeGetBallotsQuery, [ electionUUID ]);
+          [getBallots] = await db.execute(getBallotsQuery, [ electionUUID ]);
         }catch(error){
           console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeGetBallotsQuery);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getBallotsQuery);
           return res.status(500).json({
             status: 500,
             message: 'Could not connect to server'
           });
         }
     
-        if (checkGetBallotsQuery.length === 0) {
-          return res.status(400).json({
-            status: 400,
-            message: "empty"
+        if (getBallots.length === 0) {
+          return res.status(200).json({
+            status: 200,
+            message: "no ballot found",
+            data: []
           });
         }
     
         return res.status(200).json({
           status: 200,
           message: "worked",
-          ballot_obj: {
-            list: checGetBallotsQuery
-          },
+          data: getBallots
         });
-    
-        // return res.status(200).json({
-        //   status: 200,
-        //   message: "worked",
-        //   ballot_obj: {
-        //     list: checGetBallotsQuery
-        //   },
-        // });
     
       });
       // delete ballot end
@@ -1228,128 +1238,153 @@ const routes = (app, sessionChecker) => {
             });
           }
 
-        if (!req.file) {
-          ballotIcon = null;
-        }else{
-          ballotIcon = req.file.location;
-        }
+          let electionUUID = req.body.electionUUID;
 
-        let electionUUID = req.body.electionUUID;
-        let ballotName = req.body.ballotName;
-        let ballotDescription = req.body.ballotDescription;
-        let ballotPosition = req.body.ballotPosition;
-        let ballotUUID = req.body.ballotUUID;
+          if (!req.file) {
+            let checkBallotIconQuery = "SELECT `id`, `avatar` FROM `ballots` WHERE `election_uuid` = ?";
+            let checkBallotIcon;
+            try{
+              [checkBallotIcon] = await db.execute(checkBallotIconQuery, [ electionUUID ]);
+            }catch(error){
+              console.log('SQL-Error: '+error);
+              sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotIconQuery);
+              return res.status(500).json({
+                status: 500,
+                message: 'Could not connect to server'
+              });
+            }
 
-        let errorInfo = {}
-        let errorCount = 0;
+            if (checkBallotIcon.length === 0) {
+              return res.status(400).json({
+                status: 400,
+                message: "Invalid ballot information"
+              });
+            }
 
-        if(ballotName.length === 0){
-          errorCount++;
-          errorInfo.ballotName = "Enter ballot name";
-        }
-    
-        if(ballotDescription.length === 0){
-          errorCount++;
-          errorInfo.ballotDescription = "Enter ballot description";
-        }
+            ballotIcon = null;
+            if(checkBallotIcon[0].avatar !== null){
+              ballotIcon = checkBallotIcon[0].avatar;
+            }
 
-        if(ballotPosition.length === 0){
-          errorCount++;
-          errorInfo.ballotPosition = "Enter ballot position";
-        }
+          }else{
+            ballotIcon = req.file.location;
+          }
 
-        let checkBallotElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
-        let checkBallotElectionUUID;
-        try{
-          [checkBallotElectionUUID] = await db.execute(checkBallotElectionUUIDQuery, [ electionUUID, uuid ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotElectionUUIDQuery);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server'
+          let ballotName = req.body.ballotName;
+          let ballotDescription = req.body.ballotDescription;
+          let ballotPosition = 1; //req.body.ballotPosition;
+          let ballotUUID = req.body.ballotUUID;
+
+          let errorInfo = {}
+          let errorCount = 0;
+
+          if(ballotName.length === 0){
+            errorCount++;
+            errorInfo.ballotName = "Enter ballot name";
+          }
+      
+          if(ballotDescription.length === 0){
+            errorCount++;
+            errorInfo.ballotDescription = "Enter ballot description";
+          }
+
+          if(ballotPosition.length === 0){
+            errorCount++;
+            errorInfo.ballotPosition = "Enter ballot position";
+          }
+
+          let checkBallotElectionUUIDQuery = "SELECT `id`, `name`, `organization_name` FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+          let checkBallotElectionUUID;
+          try{
+            [checkBallotElectionUUID] = await db.execute(checkBallotElectionUUIDQuery, [ electionUUID, uuid ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotElectionUUIDQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
+
+          if (checkBallotElectionUUID.length === 0) {
+            return res.status(400).json({
+              status: 400,
+              message: "Invalid election information"
+            });
+          }
+
+          let checkBallotNameUUIDQuery = "SELECT `id`, `name`, `election_uuid` FROM ballots WHERE `election_uuid` = ? AND `name` = ? AND `ballot_uuid` != ? ";
+          let checkBallotNameUUID;
+          try{
+            [checkBallotNameUUID] = await db.execute(checkBallotNameUUIDQuery, [ electionUUID, ballotName, ballotUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotNameUUIDQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
+
+          if (checkBallotNameUUID.length > 0) {
+            return res.status(400).json({
+              status: 400,
+              message: "Ballot name already exist"
+            });
+          }
+
+          let errorMessage = "Error: Sorry, failed to update ballot";
+
+          if(errorCount > 0){
+            return res.status(400).json({
+              status: 400,
+              message: errorMessage,
+              errors: errorInfo
+            });
+          }
+      
+          let postBallotQuery = "UPDATE `ballots` SET `slot_number` = ?, `name` = ?, `description` = ?, `avatar` = ? WHERE `ballot_uuid` = ? ";
+          let checkBallotQuery;
+          try{
+            [checkBallotQuery] = await db.execute(postBallotQuery, [ ballotPosition, ballotName, ballotDescription, ballotIcon, ballotUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+postBallotQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server..'
+            });
+          }
+
+          let makeGetBallotsQuery = "SELECT * FROM ballots WHERE `election_uuid` = ? ORDER BY `name` ASC";
+          let checGetBallotsQuery;
+          try{
+            [checGetBallotsQuery] = await db.execute(makeGetBallotsQuery, [ electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeGetBallotsQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
+      
+          if (checGetBallotsQuery.length === 0) {
+            return res.status(400).json({
+              status: 400,
+              message: "empty"
+            });
+          }
+      
+          return res.status(200).json({
+            status: 200,
+            message: "worked",
+            ballot_obj: {
+              list: checGetBallotsQuery
+            },
           });
-        }
 
-        if (checkBallotElectionUUID.length === 0) {
-          return res.status(400).json({
-            status: 400,
-            message: "Invalid election ID"
-          });
-        }
-
-        let checkBallotNameUUIDQuery = "SELECT `id`, `name`, `election_uuid` FROM ballots WHERE `election_uuid` = ? AND `name` = ?";
-        let checkBallotNameUUID;
-        try{
-          [checkBallotNameUUID] = await db.execute(checkBallotNameUUIDQuery, [ electionUUID, ballotName ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotNameUUIDQuery);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server'
-          });
-        }
-
-        if (checkBallotNameUUID.length === 1) {
-          return res.status(400).json({
-            status: 400,
-            message: "Ballot name already exist"
-          });
-        }
-
-        let errorMessage = "Error: Sorry, failed to create ballot";
-
-        if(errorCount > 0){
-          return res.status(400).json({
-            status: 400,
-            message: errorMessage,
-            errors: errorInfo
-          });
-        }
-    
-        let postBallotQuery = "UPDATE `ballots` SET `slot_number` = ?, `name` = ?, `description` = ?, `avatar` = ? WHERE `ballot_uuid` = ? ";
-        let checkBallotQuery;
-        try{
-          [checkBallotQuery] = await db.execute(postBallotQuery, [ ballotPosition, ballotName, ballotDescription, ballotIcon, ballotUUID ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+postBallotQuery);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server..'
-          });
-        }
-
-        let makeGetBallotsQuery = "SELECT * FROM ballots WHERE `election_uuid` = ?";
-        let checGetBallotsQuery;
-        try{
-          [checGetBallotsQuery] = await db.execute(makeGetBallotsQuery, [ electionUUID ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+makeGetBallotsQuery);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server'
-          });
-        }
-    
-        if (checGetBallotsQuery.length === 0) {
-          return res.status(400).json({
-            status: 400,
-            message: "empty"
-          });
-        }
-    
-        return res.status(200).json({
-          status: 200,
-          message: "worked",
-          ballot_obj: {
-            list: checGetBallotsQuery
-          },
         });
-
-      });
 
       });
   
