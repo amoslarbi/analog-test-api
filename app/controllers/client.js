@@ -1254,12 +1254,13 @@ const routes = (app, sessionChecker) => {
           }
 
           let electionUUID = req.body.electionUUID;
+          let ballotUUID = req.body.ballotUUID;
 
           if (!req.file) {
-            let checkBallotIconQuery = "SELECT `id`, `avatar` FROM `ballots` WHERE `election_uuid` = ?";
+            let checkBallotIconQuery = "SELECT `id`, `avatar` FROM `ballots` WHERE `election_uuid` = ? AND `ballot_uuid` = ?";
             let checkBallotIcon;
             try{
-              [checkBallotIcon] = await db.execute(checkBallotIconQuery, [ electionUUID ]);
+              [checkBallotIcon] = await db.execute(checkBallotIconQuery, [ electionUUID, ballotUUID ]);
             }catch(error){
               console.log('SQL-Error: '+error);
               sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkBallotIconQuery);
@@ -1288,7 +1289,7 @@ const routes = (app, sessionChecker) => {
           let ballotName = req.body.ballotName;
           let ballotDescription = req.body.ballotDescription;
           let ballotPosition = 1; //req.body.ballotPosition;
-          let ballotUUID = req.body.ballotUUID;
+          
 
           let errorInfo = {}
           let errorCount = 0;
