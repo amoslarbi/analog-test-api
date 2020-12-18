@@ -658,6 +658,61 @@ const routes = (app, sessionChecker) => {
       });
       // get ballots end
 
+      // get voters start
+      app.post(PREFIX+'/get-voters', sessionChecker, async (req, res) => {
+        let uuid = req.uuid;
+        let electionUUID = trim(req.body.election);
+
+        let checkElectionUUIDQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkElectionUUID;
+        try{
+          [checkElectionUUID] = await db.execute(checkElectionUUIDQuery, [ electionUUID, uuid ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionUUIDQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checkElectionUUID.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "Invalid election information"
+          });
+        }
+    
+        let electionVoterQuery = "SELECT * FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ?";
+        let electionVoter;
+        try{
+          [electionVoter] = await db.execute(electionVoterQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+electionVoterQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (electionVoter.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "No ballot found",
+            data: []
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          data: electionVoter
+        });
+    
+      });
+      // get voters end
+
       // add voters start
       app.post(PREFIX+'/add-voter', sessionChecker, async (req, res) => {
         const uuid = req.uuid;
