@@ -661,11 +661,15 @@ const routes = (app, sessionChecker) => {
       // add voters start
       app.post(PREFIX+'/add-voter', sessionChecker, async (req, res) => {
         const uuid = req.uuid;
+        let voterForm = req.body.voterForm;
         let electionUUID = trim(req.body.electionUUID);
-        let voterName = trim(req.body.voterName);
-        let voterEmail = trim(req.body.voterEmail);
+        let voterName = trim(voterForm.voterName);
+        let voterEmail = trim(voterForm.voterEmail);
         let newVoterUUID = uuidv5(voterEmail, uuidv4());
-        let voterPhoneNumber = trim(req.body.voterPhoneNumber);
+        let voterPhoneNumber = trim(voterForm.voterPhoneNumber);
+
+        let errorInfo = {}
+        let errorCount = 0;
 
         if(voterName.length === 0){
           errorCount++;
@@ -674,12 +678,22 @@ const routes = (app, sessionChecker) => {
 
         if(voterEmail.length === 0){
           errorCount++;
-          errorInfo.voterEmail = "Enter voter email name";
+          errorInfo.voterEmail = "Enter voter email";
         }
 
         if(voterPhoneNumber.length === 0){
           errorCount++;
           errorInfo.voterPhoneNumber = "Enter voter phone number";
+        }
+
+        console.log(errorInfo);
+
+        if(errorCount > 0){
+          return res.status(400).json({
+            status: 400,
+            message: 'Error: Sorry, failed to add voter',
+            errors: errorInfo
+          });
         }
 
         // check elections table if the EC about to add voters is the owner of that election
@@ -706,7 +720,7 @@ const routes = (app, sessionChecker) => {
 
         // check the voters table if that voter already exist
 
-        let checkVotersTableQuery = "SELECT id, email FROM voters WHERE `email` = ?";
+        let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ?";
         let checkVotersTableQueryResult;
         try{
           [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail ]);
@@ -720,7 +734,7 @@ const routes = (app, sessionChecker) => {
         }
 
         if (checkVotersTableQueryResult.length === 1) {
-          let voter_uuid = checkLoginQuery[0].voter_uuid;
+          let voter_uuid = checkVotersTableQueryResult[0].voter_uuid;
 
           // check the election voters table to see if that voter already exist
 
@@ -742,7 +756,7 @@ const routes = (app, sessionChecker) => {
           if (checkElectionVotersTableQueryResult.length === 1) {
             return res.status(400).json({
               status: 400,
-              message: "voter already exist"
+              message: "Voter already exist"
             });
           }
 
