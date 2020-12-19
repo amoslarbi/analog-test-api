@@ -741,8 +741,6 @@ const routes = (app, sessionChecker) => {
           errorInfo.voterPhoneNumber = "Enter voter phone number";
         }
 
-        console.log(errorInfo);
-
         if(errorCount > 0){
           return res.status(400).json({
             status: 400,
@@ -769,7 +767,7 @@ const routes = (app, sessionChecker) => {
         if (checkECQueryResult.length === 0) {
           return res.status(400).json({
             status: 400,
-            message: "not you"
+            message: "You are not the owner of this election"
           });
         }
 
@@ -910,6 +908,216 @@ const routes = (app, sessionChecker) => {
     
       });
       // add voters end
+
+      // edit voters start
+      app.post(PREFIX+'/edit-voter', sessionChecker, async (req, res) => {
+        const uuid = req.uuid;
+        let editVoterForm = req.body.editVoterForm;
+        let electionUUID = trim(req.body.electionUUID);
+        let voterName = trim(editVoterForm.voterName);
+        let voterEmail = trim(editVoterForm.voterEmail);
+        let voterPhoneNumber = trim(editVoterForm.voterPhoneNumber);
+
+        let errorInfo = {}
+        let errorCount = 0;
+
+        if(voterName.length === 0){
+          errorCount++;
+          errorInfo.voterName = "Enter voter name";
+        }
+
+        if(voterEmail.length === 0){
+          errorCount++;
+          errorInfo.voterEmail = "Enter voter email";
+        }
+
+        if(voterPhoneNumber.length === 0){
+          errorCount++;
+          errorInfo.voterPhoneNumber = "Enter voter phone number";
+        }
+
+        if(errorCount > 0){
+          return res.status(400).json({
+            status: 400,
+            message: 'Error: Sorry, failed to add voter',
+            errors: errorInfo
+          });
+        }
+
+        // check elections table if the EC about to add voters is the owner of that election
+    
+        let checkECQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkECQueryResult;
+        try{
+          [checkECQueryResult] = await db.execute(checkECQuery, [ electionUUID, uuid ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkECQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checkECQueryResult.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "You are not the owner of this election"
+          });
+        }
+
+        // check the voters table if that voter already exist
+
+        let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ?";
+        let checkVotersTableQueryResult;
+        try{
+          [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersTableQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if (checkVotersTableQueryResult.length === 0) {
+          let voter_uuid = checkVotersTableQueryResult[0].voter_uuid;
+
+            return res.status(400).json({
+              status: 400,
+              message: "Voter does not exist"
+            });
+
+        }
+
+        // update voter table
+
+        let editVotersTableQuery = "UPDATE voters SET fullname = ?, email = ?, phone_number = ? WHERE email = ?";
+        let editVotersTableQueryResult;
+        try{
+          [editVotersTableQueryResult] = await db.execute(editVotersTableQuery, [ voterName, voterEmail, voterPhoneNumber ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+editVotersTableQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+
+        // get voters
+
+        let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
+        let getVotersQueryResult;
+        try{
+          [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          voter_obj: {
+            list: getVotersQueryResult
+          },
+        });
+    
+      });
+      // edit voters end
+
+      // delete voter start
+      app.post(PREFIX+'/delete-ballot', sessionChecker, async (req, res) => {
+        const uuid = req.uuid;
+        let voterUUID = trim(req.body.voter);
+        let electionUUID = trim(req.body.election);
+
+        // check elections table if the EC about to add voters is the owner of that election
+
+        let checkElectionUUIDQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+        let checkElectionUUID;
+        try{
+          [checkElectionUUID] = await db.execute(checkElectionUUIDQuery, [ electionUUID, uuid ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionUUIDQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (checkElectionUUID.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "Invalid voter information"
+          });
+        }
+    
+        let deleteVoterQuery = "DELETE FROM `voters` WHERE `voter_uuid` = ? AND `election_uuid` = ?";
+        let deleteVoter;
+        try{
+          [deleteVoter] = await db.execute(deleteVoterQuery, [ voterUUID, electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+deleteVoterQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+    
+        if (deleteVoter.length === 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "Invalid voter information"
+          });
+        }
+
+        let deleteElectionVoterQuery = "DELETE FROM `election_voters` WHERE `voter_uuid` = ? AND `election_uuid` = ?";
+        let deleteElectionVoter;
+        try{
+          [deleteElectionVoter] = await db.execute(deleteElectionVoterQuery, [ voterUUID, electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+deleteElectionVoterQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        // get voters
+
+        let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
+        let getVotersQueryResult;
+        try{
+          [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server..'
+          });
+        }
+    
+        return res.status(200).json({
+          status: 200,
+          message: "worked",
+          voter_obj: {
+            list: getVotersQueryResult
+          },
+        });
+    
+      });
+      // delete voter end
 
       // delete ballot start
       app.post(PREFIX+'/delete-ballot', sessionChecker, async (req, res) => {
