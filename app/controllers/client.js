@@ -899,6 +899,21 @@ const routes = (app, sessionChecker) => {
             message: 'Could not connect to server..'
           });
         }
+
+        if(getVotersQueryResult.length === 1){
+          let updateElectionQuery = "UPDATE `elections` SET `voters_status` = '1' WHERE election_uuid = ? ";
+          let updateElectionQueryResult;
+          try{
+            [updateElectionQueryResult] = await db.execute(updateElectionQuery, [ electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateElectionQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server..'
+            });
+          }
+        }
     
         return res.status(200).json({
           status: 200,
@@ -1115,6 +1130,21 @@ const routes = (app, sessionChecker) => {
             message: 'Could not connect to server..'
           });
         }
+
+        if(getVotersQueryResult.length === 0){
+          let updateElectionQuery = "UPDATE `elections` SET `voters_status` = '0' WHERE election_uuid = ? ";
+          let updateElectionQueryResult;
+          try{
+            [updateElectionQueryResult] = await db.execute(updateElectionQuery, [ electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateElectionQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server..'
+            });
+          }
+        }
     
         return res.status(200).json({
           status: 200,
@@ -1187,6 +1217,19 @@ const routes = (app, sessionChecker) => {
         }
     
         if (getBallots.length === 0) {
+          let updateElectionQuery = "UPDATE `elections` SET `ballot_status` = '0' WHERE election_uuid = ? ";
+          let updateElectionQueryResult;
+          try{
+            [updateElectionQueryResult] = await db.execute(updateElectionQuery, [ electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateElectionQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server..'
+            });
+          }
+
           return res.status(200).json({
             status: 200,
             message: "no ballot found",
@@ -1498,12 +1541,19 @@ const routes = (app, sessionChecker) => {
             });
           }
       
-          if (electionBallot.length === 0) {
-            return res.status(200).json({
-              status: 200,
-              message: "No ballots found",
-              data: []
-            });
+          if (electionBallot.length === 1) {
+            let updateElectionQuery = "UPDATE `elections` SET `ballot_status` = '1' WHERE election_uuid = ? ";
+            let updateElectionQueryResult;
+            try{
+              [updateElectionQueryResult] = await db.execute(updateElectionQuery, [ electionUUID ]);
+            }catch(error){
+              console.log('SQL-Error: '+error);
+              sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateElectionQuery);
+              return res.status(500).json({
+                status: 500,
+                message: 'Could not connect to server..'
+              });
+            }
           }
       
           return res.status(200).json({
