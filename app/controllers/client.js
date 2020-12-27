@@ -8,6 +8,7 @@ const ballotIconUpload = upload.single("ballotIcon");
 const {
   trim,
   sendMessageToTelegram,
+  validatePhoneNumber
 } = require('../utilities/utilities');
 const Constants = require('../misc/api-constants');
 const PREFIX = "/client";
@@ -739,6 +740,9 @@ const routes = (app, sessionChecker) => {
         if(voterPhoneNumber.length === 0){
           errorCount++;
           errorInfo.voterPhoneNumber = "Enter voter phone number";
+        }else if(!validatePhoneNumber('+'+voterPhoneNumber)){
+          errorCount++;
+          errorInfo.voterPhoneNumber = "Invalid phone number";
         }
 
         if(errorCount > 0){
@@ -773,10 +777,10 @@ const routes = (app, sessionChecker) => {
 
         // check the voters table if that voter already exist
 
-        let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ?";
+        let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ? AND `add_by` =  ?";
         let checkVotersTableQueryResult;
         try{
-          [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail ]);
+          [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail, uuid ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersTableQuery);
@@ -786,7 +790,7 @@ const routes = (app, sessionChecker) => {
           });
         }
 
-        if (checkVotersTableQueryResult.length === 1) {
+        if (checkVotersTableQueryResult.length > 0) {
           let voter_uuid = checkVotersTableQueryResult[0].voter_uuid;
 
           // check the election voters table to see if that voter already exist
@@ -828,37 +832,35 @@ const routes = (app, sessionChecker) => {
             });
           }
 
-        // get voters
+          // get voters
 
-        let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
-        let getVotersQueryResult;
-        try{
-          [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
-        }catch(error){
-          console.log('SQL-Error: '+error);
-          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
-          return res.status(500).json({
-            status: 500,
-            message: 'Could not connect to server..'
+          let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
+          let getVotersQueryResult;
+          try{
+            [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
+            return res.status(500).json({
+              status: 500,
+              message: 'Could not connect to server..'
+            });
+          }
+      
+          return res.status(200).json({
+            status: 200,
+            message: "worked",
+            data: getVotersQueryResult
           });
-        }
-    
-        return res.status(200).json({
-          status: 200,
-          message: "worked",
-          voter_obj: {
-            list: getVotersQueryResult
-          },
-        });
 
         }
 
         // add voter to the voters table if voter
 
-        let addToVotersTableQuery = "INSERT INTO `voters` (`voter_uuid`, `fullname`, `email`, `phone_number`, `created_at`) VALUES(?, ?, ?, ?, NOW())";
+        let addToVotersTableQuery = "INSERT INTO `voters` (`voter_uuid`, `fullname`, `email`, `phone_number`, `add_by`, `created_at`) VALUES(?, ?, ?, ?, ?, NOW())";
         let addToVotersTableQueryResult;
         try{
-          [addToVotersTableQueryResult] = await db.execute(addToVotersTableQuery, [ newVoterUUID, voterName, voterEmail, voterPhoneNumber ]);
+          [addToVotersTableQueryResult] = await db.execute(addToVotersTableQuery, [ newVoterUUID, voterName, voterEmail, voterPhoneNumber, uuid ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToVotersTableQuery);
@@ -901,9 +903,7 @@ const routes = (app, sessionChecker) => {
         return res.status(200).json({
           status: 200,
           message: "worked",
-          voter_obj: {
-            list: getVotersQueryResult
-          },
+          data: getVotersQueryResult
         });
     
       });
@@ -914,6 +914,7 @@ const routes = (app, sessionChecker) => {
         const uuid = req.uuid;
         let editVoterForm = req.body.editVoterForm;
         let electionUUID = trim(req.body.electionUUID);
+        let voterUUID = trim(editVoterForm.voterUUID);
         let voterName = trim(editVoterForm.voterName);
         let voterEmail = trim(editVoterForm.voterEmail);
         let voterPhoneNumber = trim(editVoterForm.voterPhoneNumber);
@@ -934,6 +935,9 @@ const routes = (app, sessionChecker) => {
         if(voterPhoneNumber.length === 0){
           errorCount++;
           errorInfo.voterPhoneNumber = "Enter voter phone number";
+        }else if(!validatePhoneNumber('+'+voterPhoneNumber)){
+          errorCount++;
+          errorInfo.voterPhoneNumber = "Invalid phone number";
         }
 
         if(errorCount > 0){
@@ -962,16 +966,16 @@ const routes = (app, sessionChecker) => {
         if (checkECQueryResult.length === 0) {
           return res.status(400).json({
             status: 400,
-            message: "You are not the owner of this election"
+            message: "Invalid election information"
           });
         }
 
         // check the voters table if that voter already exist
 
-        let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ?";
+        let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `voter_uuid` = ? AND `add_by` = ?";
         let checkVotersTableQueryResult;
         try{
-          [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail ]);
+          [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterUUID, uuid ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersTableQuery);
@@ -984,18 +988,38 @@ const routes = (app, sessionChecker) => {
         if (checkVotersTableQueryResult.length === 0) {
             return res.status(400).json({
               status: 400,
-              message: "Voter does not exist"
+              message: "Invalid voter information"
             });
         }
-        
-        let voter_uuid = checkVotersTableQueryResult[0].voter_uuid;
+
+        // check the voters table if that voter already exist
+
+        let checkVotersEmailQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ? AND `add_by` =  ? AND `voter_uuid` != ?";
+        let checkVotersEmailQueryResult;
+        try{
+          [checkVotersEmailQueryResult] = await db.execute(checkVotersEmailQuery, [ voterEmail, uuid, voterUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersEmailQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
+          });
+        }
+
+        if (checkVotersEmailQueryResult.length > 0) {
+          return res.status(400).json({
+            status: 400,
+            message: "Voter email already exists"
+          });
+      }
 
         // update voter table
 
         let editVotersTableQuery = "UPDATE `voters` SET `fullname` = ?, `email` = ?, `phone_number` = ? WHERE `voter_uuid` = ?";
         let editVotersTableQueryResult;
         try{
-          [editVotersTableQueryResult] = await db.execute(editVotersTableQuery, [ voterName, voterEmail, voterPhoneNumber, voter_uuid ]);
+          [editVotersTableQueryResult] = await db.execute(editVotersTableQuery, [ voterName, voterEmail, voterPhoneNumber, voterUUID ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+editVotersTableQuery);
@@ -1023,9 +1047,7 @@ const routes = (app, sessionChecker) => {
         return res.status(200).json({
           status: 200,
           message: "worked",
-          voter_obj: {
-            list: getVotersQueryResult
-          },
+          data: getVotersQueryResult
         });
     
       });
