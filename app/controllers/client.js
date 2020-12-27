@@ -1119,9 +1119,7 @@ const routes = (app, sessionChecker) => {
         return res.status(200).json({
           status: 200,
           message: "worked",
-          voter_obj: {
-            list: getVotersQueryResult
-          },
+          data: getVotersQueryResult
         });
     
       });
