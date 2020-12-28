@@ -664,6 +664,19 @@ const routes = (app, sessionChecker) => {
         let uuid = req.uuid;
         let electionUUID = trim(req.body.election);
 
+        let page = req.body.page;
+
+        if(!req.body.page){
+          page = 1;
+        }
+
+        let limit;
+        if(page === 1){
+          limit = 0;
+        }else{
+          limit = parseInt(page - 1) * 10;
+        }
+
         let checkElectionUUIDQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
         let checkElectionUUID;
         try{
@@ -684,10 +697,10 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let electionVoterQuery = "SELECT * FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ?";
+        let electionVoterQuery = "SELECT * FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ? ORDER BY `fullname` ASC LIMIT ?,10";
         let electionVoter;
         try{
-          [electionVoter] = await db.execute(electionVoterQuery, [ electionUUID ]);
+          [electionVoter] = await db.execute(electionVoterQuery, [ electionUUID, limit ]);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+electionVoterQuery);
@@ -700,15 +713,34 @@ const routes = (app, sessionChecker) => {
         if (electionVoter.length === 0) {
           return res.status(400).json({
             status: 400,
-            message: "No ballot found",
-            data: []
+            message: "No voters found",
+            data: [],
+            meta: {
+              total_voters: 0
+            }
+          });
+        }
+
+        let electionVoterCountQuery = "SELECT COUNT(`voters`.`id`) as `total_voters` FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ?";
+        let electionVoterCount;
+        try{
+          [electionVoterCount] = await db.execute(electionVoterCountQuery, [ electionUUID ]);
+        }catch(error){
+          console.log('SQL-Error: '+error);
+          sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+electionVoterCountQuery);
+          return res.status(500).json({
+            status: 500,
+            message: 'Could not connect to server'
           });
         }
     
         return res.status(200).json({
           status: 200,
           message: "worked",
-          data: electionVoter
+          data: electionVoter,
+          meta: {
+            total_voters: electionVoterCount[0].total_voters
+          }
         });
     
       });
