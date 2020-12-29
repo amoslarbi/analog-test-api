@@ -661,13 +661,28 @@ const routes = (app, sessionChecker) => {
 
       // get voters start
       app.post(PREFIX+'/get-voters', sessionChecker, async (req, res) => {
+        let queryValues = [];
+        let searchQuery = '';
         let uuid = req.uuid;
         let electionUUID = trim(req.body.election);
 
+        queryValues.push(electionUUID);
+
         let page = req.body.page;
+        let search = req.body.search;
 
         if(!req.body.page){
           page = 1;
+        }
+
+        if(!req.body.search){
+          search = '';
+        }else{
+          if (search.length !== 0) {
+            searchQuery = "AND (`fullname` LIKE ? OR `email` = ?)";
+            queryValues.push('%' + search + '%');
+            queryValues.push(search);
+          }
         }
 
         let limit;
@@ -676,6 +691,8 @@ const routes = (app, sessionChecker) => {
         }else{
           limit = parseInt(page - 1) * 10;
         }
+
+        queryValues.push(limit);
 
         let checkElectionUUIDQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
         let checkElectionUUID;
@@ -697,10 +714,10 @@ const routes = (app, sessionChecker) => {
           });
         }
     
-        let electionVoterQuery = "SELECT * FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ? ORDER BY `fullname` ASC LIMIT ?,10";
+        let electionVoterQuery = "SELECT * FROM `voters` WHERE voter_uuid IN (SELECT `voter_uuid` FROM `election_voters` WHERE `election_uuid` = ?) " + searchQuery + " ORDER BY `fullname` ASC LIMIT ?,10";
         let electionVoter;
         try{
-          [electionVoter] = await db.execute(electionVoterQuery, [ electionUUID, limit ]);
+          [electionVoter] = await db.execute(electionVoterQuery, queryValues);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+electionVoterQuery);
@@ -711,8 +728,8 @@ const routes = (app, sessionChecker) => {
         }
     
         if (electionVoter.length === 0) {
-          return res.status(400).json({
-            status: 400,
+          return res.status(201).json({
+            status: 201,
             message: "No voters found",
             data: [],
             meta: {
@@ -721,10 +738,12 @@ const routes = (app, sessionChecker) => {
           });
         }
 
-        let electionVoterCountQuery = "SELECT COUNT(`voters`.`id`) as `total_voters` FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ?";
+        queryValues.pop(); // removes limit from the queryValues
+
+        let electionVoterCountQuery = "SELECT COUNT(`voters`.`id`) as `total_voters` FROM `voters` INNER JOIN `election_voters` ON voters.voter_uuid = election_voters.voter_uuid WHERE election_voters.election_uuid = ? " + searchQuery;
         let electionVoterCount;
         try{
-          [electionVoterCount] = await db.execute(electionVoterCountQuery, [ electionUUID ]);
+          [electionVoterCount] = await db.execute(electionVoterCountQuery, queryValues);
         }catch(error){
           console.log('SQL-Error: '+error);
           sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+electionVoterCountQuery);

@@ -50,7 +50,7 @@ const routes = (app) => {
       [checkLoginQuery] = await db.execute(loginQuery, [ email ]);
     }catch(error){
       console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkForgotPasswordEmailQuery);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+loginQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
