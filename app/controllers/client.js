@@ -366,7 +366,7 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
   }
 
   // add voter to the voters table if voter
-
+  let newVoterUUID = uuidv5(voterEmail, uuidv4());
   let addToVotersTableQuery = "INSERT INTO `voters` (`voter_uuid`, `fullname`, `email`, `phone_number`, `add_by`, `created_at`) VALUES(?, ?, ?, ?, ?, NOW())";
   let addToVotersTableQueryResult;
   try{
