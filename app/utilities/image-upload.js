@@ -20,6 +20,14 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const csvFileFilter = (req, file, cb) => {
+  if (file.mimetype === "text/csv" || file.mimetype === "application/csv") {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type, only JPEG and PNG is allowed!"), false);
+  }
+};
+
 const s3delete = (file) => {
   return new Promise((resolve, reject) => {
       s3.createBucket({
@@ -47,7 +55,22 @@ const upload = multer({
     s3,
     bucket: "oballot-election-icons",
     metadata: function (req, file, cb) {
-      cb(null, { fieldName: "TESTING_METADATA" });
+      cb(null, { fieldName: "ELECTION_BALLOT" });
+    },
+    key: function (req, file, cb) {
+      cb(null, Date.now().toString());
+    },
+  }),
+});
+
+const uploadCSV = multer({
+  csvFileFilter,
+  storage: multerS3({
+    acl: "public-read",
+    s3,
+    bucket: "oballot-election-icons",
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: "VOTERS_CSV" });
     },
     key: function (req, file, cb) {
       cb(null, Date.now().toString());
@@ -57,5 +80,6 @@ const upload = multer({
 
 module.exports = {
   upload,
+  uploadCSV,
   s3delete
 };

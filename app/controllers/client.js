@@ -3,12 +3,13 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
 const {
   upload,
+  uploadCSV,
   s3delete
 } = require("../utilities/image-upload");
 var moment = require('moment-timezone');
 const electionIconUpload = upload.single("electionIcon");
 const ballotIconUpload = upload.single("ballotIcon");
-const votersCSVUpload = upload.single("votersCSV");
+const votersCSVUpload = uploadCSV.single("votersCSV");
 const getCSV = require('get-csv');
 const {
   trim,
