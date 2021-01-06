@@ -2003,6 +2003,8 @@ const routes = (app, sessionChecker) => {
             let total_voters_error = 0;
             for(let i = 0; i < rows.length; i++){
               if(rows[i].Name === undefined || rows[i].Email === undefined || rows[i].Phone === undefined){
+                // delete CSV file from S3 Bucket
+                s3delete(votersCSV);
                 return res.status(400).json({
                   status: 400,
                   message: "CSV file format is invalid. It must have Name, Email and Phone as headers",
@@ -2021,6 +2023,9 @@ const routes = (app, sessionChecker) => {
                 total_voters_added++;
               }
             }
+
+            // delete CSV file from S3 Bucket
+            s3delete(votersCSV);
 
             // get voters
 
