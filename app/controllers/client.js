@@ -1,10 +1,15 @@
 const db = require('../database/connection');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4, v5: uuidv5 } = require('uuid');
-const upload = require("../utilities/image-upload");
+const {
+  upload,
+  s3delete
+} = require("../utilities/image-upload");
 var moment = require('moment-timezone');
 const electionIconUpload = upload.single("electionIcon");
 const ballotIconUpload = upload.single("ballotIcon");
+const votersCSVUpload = upload.single("votersCSV");
+const getCSV = require('get-csv');
 const {
   trim,
   sendMessageToTelegram,
@@ -264,6 +269,136 @@ const getElectionCardInfo = async(electionUuid, uuid) => {
   }
 }
 
+const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uuid) => {
+  let errorInfo = {}
+  let errorCount = 0;
+
+  if(voterName.length === 0){
+    errorCount++;
+    errorInfo.voterName = "Enter voter name";
+  }
+
+  if(voterEmail.length === 0){
+    errorCount++;
+    errorInfo.voterEmail = "Enter voter email";
+  }
+
+  if(voterPhoneNumber.length === 0){
+    errorCount++;
+    errorInfo.voterPhoneNumber = "Enter voter phone number";
+  }else if(!validatePhoneNumber('+'+voterPhoneNumber)){
+    errorCount++;
+    errorInfo.voterPhoneNumber = "Invalid phone number";
+  }
+
+  if(errorCount > 0){
+    return json({
+      status: 400,
+      message: 'Error: Sorry, failed to add voter'
+    });
+  }
+
+  
+
+  // check the voters table if that voter already exist
+
+  let checkVotersTableQuery = "SELECT id, email, voter_uuid FROM voters WHERE `email` = ? AND `add_by` =  ?";
+  let checkVotersTableQueryResult;
+  try{
+    [checkVotersTableQueryResult] = await db.execute(checkVotersTableQuery, [ voterEmail, uuid ]);
+  }catch(error){
+    console.log('SQL-Error: '+error);
+    sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersTableQuery);
+    return json({
+      status: 500,
+      message: 'Could not connect to server'
+    });
+  }
+
+  if (checkVotersTableQueryResult.length > 0) {
+    let voter_uuid = checkVotersTableQueryResult[0].voter_uuid;
+
+    // check the election voters table to see if that voter already exist
+
+    let checkElectionVotersTableQuery = "SELECT * FROM election_voters WHERE `voter_uuid` = ? AND `election_uuid` = ?";
+    let checkElectionVotersTableQueryResult;
+    try{
+      [checkElectionVotersTableQueryResult] = await db.execute(checkElectionVotersTableQuery, [ voter_uuid, electionUUID ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionVotersTableQuery);
+      return json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    // if voter already exist in the voters and election voters table, prompt EC
+
+    if (checkElectionVotersTableQueryResult.length === 1) {
+      return json({
+        status: 400,
+        message: "Voter already exist"
+      });
+    }
+
+    // add voter to the election voters table if voter is not present
+
+    let addToElectionVotersTableQuery = "INSERT INTO `election_voters` (`election_uuid`, `voter_uuid`, `created_at`) VALUES(?, ?, NOW())";
+    let addToElectionVotersTableQueryResult;
+    try{
+      [addToElectionVotersTableQueryResult] = await db.execute(addToElectionVotersTableQuery, [ electionUUID, voter_uuid ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToElectionVotersTableQuery);
+      return json({
+        status: 500,
+        message: 'Could not connect to server..'
+      });
+    }
+
+    return json({
+      status: 200,
+      message: "voter added"
+    })
+
+  }
+
+  // add voter to the voters table if voter
+
+  let addToVotersTableQuery = "INSERT INTO `voters` (`voter_uuid`, `fullname`, `email`, `phone_number`, `add_by`, `created_at`) VALUES(?, ?, ?, ?, ?, NOW())";
+  let addToVotersTableQueryResult;
+  try{
+    [addToVotersTableQueryResult] = await db.execute(addToVotersTableQuery, [ newVoterUUID, voterName, voterEmail, voterPhoneNumber, uuid ]);
+  }catch(error){
+    console.log('SQL-Error: '+error);
+    sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToVotersTableQuery);
+    return json({
+      status: 500,
+      message: 'Could not connect to server..'
+    });
+  }
+
+  // add voter to the election voters table
+
+  let addNewToElectionVotersTableQuery = "INSERT INTO `election_voters` (`election_uuid`, `voter_uuid`, `created_at`) VALUES(?, ?, NOW())";
+  let addNewToElectionVotersTableQueryResult;
+  try{
+    [addNewToElectionVotersTableQueryResult] = await db.execute(addNewToElectionVotersTableQuery, [ electionUUID, newVoterUUID ]);
+  }catch(error){
+    console.log('SQL-Error: '+error);
+    sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addNewToElectionVotersTableQuery);
+    return json({
+      status: 500,
+      message: 'Could not connect to server..'
+    });
+  }
+
+  return json({
+    status: 200,
+    message: "voter added"
+  })
+}
 // client functions ends here
 
 const routes = (app, sessionChecker) => {
@@ -897,6 +1032,21 @@ const routes = (app, sessionChecker) => {
               message: 'Could not connect to server..'
             });
           }
+
+          if(getVotersQueryResult.length === 1){
+            let updateElectionQuery = "UPDATE `elections` SET `voters_status` = '1' WHERE election_uuid = ? ";
+            let updateElectionQueryResult;
+            try{
+              [updateElectionQueryResult] = await db.execute(updateElectionQuery, [ electionUUID ]);
+            }catch(error){
+              console.log('SQL-Error: '+error);
+              sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateElectionQuery);
+              return res.status(500).json({
+                status: 500,
+                message: 'Could not connect to server..'
+              });
+            }
+          }
       
           return res.status(200).json({
             status: 200,
@@ -1473,8 +1623,9 @@ const routes = (app, sessionChecker) => {
 
         ballotIconUpload(req, res, async function (err) {
           if (err) {
-            return res.json({
-              success: false,
+            return res.status(400).json({
+              status: 400,
+              message: "Image Upload Error",
               errors: {
                 title: "Image Upload Error",
                 detail: err.message,
@@ -1627,8 +1778,9 @@ const routes = (app, sessionChecker) => {
 
         ballotIconUpload(req, res, async function (err) {
           if (err) {
-            return res.json({
-              success: false,
+            return res.status(400).json({
+              status: 400,
+              message: "Image Upload Error",
               errors: {
                 title: "Image Upload Error",
                 detail: err.message,
@@ -1787,8 +1939,126 @@ const routes = (app, sessionChecker) => {
         });
 
       });
-  
       // edit ballot end
+
+      // upload voters csv start
+      app.post(PREFIX+'/upload-voters-csv', sessionChecker, async (req, res) => {
+
+        const uuid = req.uuid;
+        let votersCSV;
+
+        votersCSVUpload(req, res, async function (err) {
+          if (err) {
+            return res.status(400).json({
+              status: 400,
+              message: "CSV Upload Error",
+              errors: {
+                title: "CSV Upload Error",
+                detail: err.message,
+                error: err,
+              },
+            });
+          }
+
+          let electionUUID = req.body.electionUUID;
+
+          if (!req.file) {
+            return res.status(400).json({
+              status: 400,
+              message: "Upload a CSV file",
+            });
+
+          }
+
+          votersCSV = req.file.location;
+
+          // check elections table if the EC about to add voters is the owner of that election
+          let checkECQuery = "SELECT * FROM elections WHERE `election_uuid` = ? AND `created_by` = ?";
+          let checkECQueryResult;
+          try{
+            [checkECQueryResult] = await db.execute(checkECQuery, [ electionUUID, uuid ]);
+          }catch(error){
+            console.log('SQL-Error: '+error);
+            sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkECQuery);
+            return json({
+              status: 500,
+              message: 'Could not connect to server'
+            });
+          }
+
+          if (checkECQueryResult.length === 0) {
+            return json({
+              status: 400,
+              message: "You are not the owner of this election"
+            });
+          }
+
+          // get voters from csv file
+          getCSV(votersCSV)
+          .then(async rows => {
+            console.log(rows)
+            let errors = [];
+            let total_voters_added = 0;
+            let total_voters_error = 0;
+            for(let i = 0; i < rows.length; i++){
+              if(rows[i].Name === undefined || rows[i].Email === undefined || rows[i].Phone === undefined){
+                return res.status(400).json({
+                  status: 400,
+                  message: "CSV file format is invalid. It must have Name, Email and Phone as headers",
+                });
+              }
+
+              let voterName = rows[i].Name;
+              let voterEmail = rows[i].Email;
+              let voterPhoneNumber = rows[i].Phone;
+
+              let addVoterInfo = await addVoter(voterName, voterEmail, voterPhoneNumber, electionUUID, uuid);
+              if(addVoterInfo.status !== 200){
+                total_voters_error++;
+                errors.push('Error adding '+voterName+' with email: '+voterEmail);
+              }else{
+                total_voters_added++;
+              }
+            }
+
+            // get voters
+
+            let getVotersQuery = "SELECT * FROM voters INNER JOIN election_voters WHERE election_voters.election_uuid = ? AND election_voters.voter_uuid = voters.voter_uuid";
+            let getVotersQueryResult;
+            try{
+              [getVotersQueryResult] = await db.execute(getVotersQuery, [ electionUUID ]);
+            }catch(error){
+              console.log('SQL-Error: '+error);
+              sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
+              return json({
+                status: 500,
+                message: 'Could not connect to server..'
+              });
+            }
+
+            return res.status(200).json({
+              status: 200,
+              message: "worked",
+              data: {
+                voters_list: getVotersQueryResult,
+                total_voters_added: total_voters_added,
+                total_voters_error: total_voters_error
+              }
+            });
+          }).catch((error) => {
+            return res.status(400).json({
+              status: 400,
+              message: "Invalid CSV file",
+              errors:{
+                details: error
+              }
+            });
+          });
+
+        });
+
+      });
+      // upload voters csv end
 }
 
 module.exports = {

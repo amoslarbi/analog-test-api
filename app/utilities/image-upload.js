@@ -20,6 +20,26 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const s3delete = (file) => {
+  return new Promise((resolve, reject) => {
+      s3.createBucket({
+          Bucket: "oballot-election-icons"
+      }, function () {
+          s3.deleteObject({
+            Bucket: "oballot-election-icons",
+            Key: file
+          }, function (err, data) {
+              if (err) {
+                console.log(err)
+              }
+              else{
+                console.log(data)
+              }
+          });
+      });
+  });
+};
+
 const upload = multer({
   fileFilter,
   storage: multerS3({
@@ -35,4 +55,7 @@ const upload = multer({
   }),
 });
 
-module.exports = upload;
+module.exports = {
+  upload,
+  s3delete
+};
