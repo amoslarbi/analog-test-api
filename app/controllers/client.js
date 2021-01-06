@@ -2064,7 +2064,8 @@ const routes = (app, sessionChecker) => {
                 voters_list: getVotersQueryResult,
                 total_voters_added: total_voters_added,
                 total_voters_error: total_voters_error
-              }
+              },
+              error: errors
             });
           }).catch((error) => {
             return res.status(400).json({
