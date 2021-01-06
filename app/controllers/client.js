@@ -2067,6 +2067,7 @@ const routes = (app, sessionChecker) => {
               }
             });
           }).catch((error) => {
+            console.log(error);
             return res.status(400).json({
               status: 400,
               message: "Invalid CSV file",
