@@ -2036,6 +2036,21 @@ const routes = (app, sessionChecker) => {
               });
             }
 
+            if(getVotersQueryResult.length > 0){
+              let updateElectionQuery = "UPDATE `elections` SET `voters_status` = '1' WHERE election_uuid = ? ";
+              let updateElectionQueryResult;
+              try{
+                [updateElectionQueryResult] = await db.execute(updateElectionQuery, [ electionUUID ]);
+              }catch(error){
+                console.log('SQL-Error: '+error);
+                sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateElectionQuery);
+                return res.status(500).json({
+                  status: 500,
+                  message: 'Could not connect to server..'
+                });
+              }
+            }
+
             return res.status(200).json({
               status: 200,
               message: "worked",
