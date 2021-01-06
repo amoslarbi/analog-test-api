@@ -293,10 +293,10 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
   }
 
   if(errorCount > 0){
-    return json({
+    return {
       status: 400,
       message: 'Error: Sorry, failed to add voter'
-    });
+    };
   }
 
   
@@ -310,10 +310,10 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
   }catch(error){
     console.log('SQL-Error: '+error);
     sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkVotersTableQuery);
-    return json({
+    return {
       status: 500,
       message: 'Could not connect to server'
-    });
+    };
   }
 
   if (checkVotersTableQueryResult.length > 0) {
@@ -328,19 +328,19 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
     }catch(error){
       console.log('SQL-Error: '+error);
       sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkElectionVotersTableQuery);
-      return json({
+      return {
         status: 500,
         message: 'Could not connect to server'
-      });
+      };
     }
 
     // if voter already exist in the voters and election voters table, prompt EC
 
     if (checkElectionVotersTableQueryResult.length === 1) {
-      return json({
+      return {
         status: 400,
         message: "Voter already exist"
-      });
+      };
     }
 
     // add voter to the election voters table if voter is not present
@@ -352,16 +352,16 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
     }catch(error){
       console.log('SQL-Error: '+error);
       sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToElectionVotersTableQuery);
-      return json({
+      return {
         status: 500,
         message: 'Could not connect to server..'
-      });
+      };
     }
 
-    return json({
+    return {
       status: 200,
       message: "voter added"
-    })
+    }
 
   }
 
@@ -374,10 +374,10 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
   }catch(error){
     console.log('SQL-Error: '+error);
     sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addToVotersTableQuery);
-    return json({
+    return {
       status: 500,
       message: 'Could not connect to server..'
-    });
+    };
   }
 
   // add voter to the election voters table
@@ -389,16 +389,16 @@ const addVoter = async(voterName, voterEmail, voterPhoneNumber, electionUUID, uu
   }catch(error){
     console.log('SQL-Error: '+error);
     sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+addNewToElectionVotersTableQuery);
-    return json({
+    return {
       status: 500,
       message: 'Could not connect to server..'
-    });
+    };
   }
 
-  return json({
+  return {
     status: 200,
     message: "voter added"
-  })
+  }
 }
 // client functions ends here
 
@@ -1981,17 +1981,17 @@ const routes = (app, sessionChecker) => {
           }catch(error){
             console.log('SQL-Error: '+error);
             sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkECQuery);
-            return json({
+            return {
               status: 500,
               message: 'Could not connect to server'
-            });
+            };
           }
 
           if (checkECQueryResult.length === 0) {
-            return json({
+            return {
               status: 400,
               message: "You are not the owner of this election"
-            });
+            };
           }
 
           // get voters from csv file
@@ -2036,7 +2036,7 @@ const routes = (app, sessionChecker) => {
             }catch(error){
               console.log('SQL-Error: '+error);
               sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+getVotersQuery);
-              return json({
+              return res.status(500).json({
                 status: 500,
                 message: 'Could not connect to server..'
               });
