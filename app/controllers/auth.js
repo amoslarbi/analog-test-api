@@ -94,168 +94,10 @@ const routes = (app) => {
 
   });
 
-  // reset password start
-  app.post(PREFIX+'/reset-password', async function(req, res) {
-
-    let token = trim(req.body.token);
-    let password = trim(req.body.password);
-    let passwordHash = hashPassword(password);
-
-    if(password.length === 0){
-      return res.status(400).json({
-        status: 400,
-        message: "Enter a password"
-      });
-    }
-
-    let resetPasswordTokenCheckQuery = "SELECT `id` FROM `users` WHERE `reset_password_code` = ? AND `reset_password_status` = 0";
-    let resetPasswordTokenCheck;
-    try{
-      [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
-    }catch(error){
-      console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+resetPasswordTokenCheckQuery);
-      return res.status(500).json({
-        status: 500,
-        message: 'Could not connect to server'
-      });
-    }
-
-    if (resetPasswordTokenCheck.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: "Invalid token"
-      });
-    }
-
-    let resetPasswordCheckQuery = "UPDATE users SET password = ?, reset_password_status = 1 WHERE reset_password_code = ?";
-    let resetPassword;
-    try{
-      [resetPassword] = await db.execute(resetPasswordCheckQuery, [ passwordHash, token ]);
-    }catch(error){
-      console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+resetPasswordCheckQuery);
-      return res.status(500).json({
-        status: 500,
-        message: 'Could not connect to server'
-      });
-    }
-
-    return res.status(200).json({
-      status: 200,
-      message: "worked",
-    });
-
-  });
-  // reset password end
-
-  // reset password token check start
-  app.post(PREFIX+'/reset-password-token-check', async function(req, res) {
-
-    let token = trim(req.body.token);
-
-    let resetPasswordTokenCheckQuery = "SELECT `fullname` FROM `users` WHERE `reset_password_code` = ? AND `reset_password_status` = 0";
-    let resetPasswordTokenCheck;
-    try{
-      [resetPasswordTokenCheck] = await db.execute(resetPasswordTokenCheckQuery, [ token ]);
-    }catch(error){
-      console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+resetPasswordTokenCheckQuery);
-      return res.status(500).json({
-        status: 500,
-        message: 'Could not connect to server'
-      });
-    }
-
-    if (resetPasswordTokenCheck.length === 1) {
-
-      let fullname = resetPasswordTokenCheck[0].fullname;
-      return res.status(200).json({
-        status: 200,
-        message: "valid token",
-        fullname: fullname,
-      });
-
-    }
-    else{
-
-      return res.status(400).json({
-        status: 400,
-        message: "Invalid token"
-      });
-
-    }
-
-  });
-  // reset password token check end
-
-  // forgot password start
-  app.post(PREFIX+'/forgot-password', async function(req, res) {
-  
-    let email = trim(req.body.email);
-
-    if(email.length === 0){
-      return res.status(400).json({
-        status: 400,
-        message: 'Enter a valid email'
-      });
-    }else if(!validateEmail(email)){
-      return res.status(400).json({
-        status: 400,
-        message: 'Enter a valid email'
-      });
-    }
-
-    let checkForgotPasswordEmailQuery = "SELECT `id`,`fullname` FROM users WHERE email = ?";
-    let checkForgotPasswordEmail;
-    try{
-      [checkForgotPasswordEmail] = await db.execute(checkForgotPasswordEmailQuery, [ email ]);
-    }catch(error){
-      console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkForgotPasswordEmailQuery);
-      return res.status(500).json({
-        status: 500,
-        message: 'Could not connect to server'
-      });
-    }
-
-    if (checkForgotPasswordEmail.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: 'Email does not exists'
-      });
-    }
-
-    let token = uuidv5(email, uuidv4());
-
-    let updateForgotPasswordFieldQuery = "UPDATE users SET reset_password_code = ?, reset_password_stamp = NOW() WHERE email = ?";
-    let updateForgotPasswordField;
-    try{
-      [updateForgotPasswordField] = await db.execute(updateForgotPasswordFieldQuery, [ token, email ]);
-    }catch(error){
-      console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+updateForgotPasswordFieldQuery);
-      return res.status(500).json({
-        status: 500,
-        message: 'Could not connect to server'
-      });
-    }
-
-    let fullName = checkForgotPasswordEmail[0].fullname;
-    let action_url = Constants.CLIENT_APP_URL + "/reset-password/" + token
-    sendPasswordResetEmail(email, fullName, action_url);
-    return res.status(200).json({
-      status: 200,
-      message: "Email sent with steps on how to reset your password"
-    });
-
-  });
-  // forgot password end
-
   // verify email token start
   app.post(PREFIX+'/verify-token', async function(req, res) {
-    
-    let token = trim(req.body.token);
+
+    let token = trim(req.body.code);
 
     let checkTokenQuery = "SELECT `id`, `fullname`, `email` FROM users WHERE `email_verification_code` = ? AND `email_verification_status` = 0";
     let checkToken;
@@ -263,7 +105,6 @@ const routes = (app) => {
       [checkToken] = await db.execute(checkTokenQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkTokenQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -281,21 +122,19 @@ const routes = (app) => {
     let email = checkToken[0].email;
     let action_url = Constants.CLIENT_APP_URL;
 
-
     let changeTokenStatusQuery = "UPDATE users SET `email_verification_status` = 1 WHERE `email_verification_code` = ?";
     let changeTokenStatus;
     try{
       [changeTokenStatus] = await db.execute(changeTokenStatusQuery, [ token ]);
     }catch(error){
       console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+changeTokenStatusQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
       });
     }
 
-    sendWelcomeEmail(email, fullName, action_url);
+    // sendWelcomeEmail(email, fullName, action_url);
 
     return res.status(200).json({
       status: 200,
@@ -309,11 +148,10 @@ const routes = (app) => {
   app.post(PREFIX + '/register', async function(req, res){
 
     let fullName = trim(req.body.fullName);
-    let country = trim(req.body.country);
     let email = trim(req.body.email);
     let password = trim(req.body.password);
     let uuid = uuidv5(email, uuidv4());
-    let hash = uuidv5(email, uuidv4());
+    let hash = Math.floor(Math.random()*90000) + 10000;
     let passwordHash = hashPassword(password);
 
     let errorInfo = {}
@@ -322,11 +160,6 @@ const routes = (app) => {
     if(fullName.length === 0){
       errorCount++;
       errorInfo.fullName = "Enter your Full name";
-    }
-
-    if(country.length === 0){
-      errorCount++;
-      errorInfo.country = "Select a Country";
     }
 
     if(email.length === 0){
@@ -348,7 +181,6 @@ const routes = (app) => {
       [checkEmailExist] = await db.execute(checkEmailExistQuery, [email]);
     }catch(error){
       console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+checkEmailExistQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -368,13 +200,12 @@ const routes = (app) => {
       });
     }
 
-    let signUpQuery = "INSERT INTO `users` (`uuid`, `fullname`, `email`, `country`, `password`, `email_verification_code`, email_verification_stamp, `user_type`, `created_at`) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, NOW())";
+    let signUpQuery = "INSERT INTO `users` (`uuid`, `fullname`, `email`, `password`, `email_verification_code`, email_verification_stamp, `created_at`) VALUES(?, ?, ?, ?, ?, NOW(), NOW())";
     let signUp;
     try{
-      [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, country, passwordHash, hash, "u"]);
+      [signUp] = await db.execute(signUpQuery, [uuid, fullName, email, passwordHash, hash]);
     }catch(error){
       console.log('SQL-Error: '+error);
-      sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+signUpQuery);
       return res.status(500).json({
         status: 500,
         message: 'Could not connect to server'
@@ -382,9 +213,7 @@ const routes = (app) => {
     }
 
     let action_url = Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
-    sendRegistrationEmail(email, fullName, action_url);
-    let alertMessage = `${fullName} signed up for oBallot from ${country}.`
-    sendMessageToTelegram('alert', alertMessage);
+    // sendRegistrationEmail(email, fullName, action_url);
     return res.status(200).json({
       status: 200,
       message: "worked"
@@ -393,7 +222,6 @@ const routes = (app) => {
   });
 
   // register users end
-
 
 }
 

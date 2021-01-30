@@ -5,4 +5,4 @@ const port = process.env.PORT || 5050;
 const server = http.createServer(app);
 
 server.listen(port);
-console.log("WEB: oBallot API Service Stated. Running on PORT="+port);
+console.log("WEB: analogteams API Service Stated. Running on PORT="+port);

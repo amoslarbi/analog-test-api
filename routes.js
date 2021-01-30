@@ -1,6 +1,4 @@
 const authentication = require('./app/controllers/auth') // authentication routes
-const client = require('./app/controllers/client') // client routes
-const voter = require('./app/controllers/voter') // voter routes
 
 const getCSV = require('get-csv');
 const routes = (app, sessionChecker) => {
@@ -12,8 +10,6 @@ const routes = (app, sessionChecker) => {
   });
 
   authentication.routes(app); // authentication routes
-  client.routes(app, sessionChecker); // client routes
-  voter.routes(app, sessionChecker); // voter routes
 }
 
 module.exports = {
