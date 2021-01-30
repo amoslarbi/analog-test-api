@@ -28,6 +28,25 @@ const sendRegistrationEmail = (to_email, name, code) => {
     });
 }
 
+const sendMovies = (email, image, title, vote_average, overview) => {
+  client.sendEmailWithTemplate({
+    "From": fromEmail,
+    "To": email,
+    "TemplateAlias": "movie",
+    "TemplateModel": {
+      "product_url": productUrl,
+      "movie_image": image,
+      "title": title,
+      "overview": overview,
+      "vote_average": vote_average,
+      "support_email": supportEmail,
+      "sender_name": senderName,
+      "product_name": productName,
+      "company_name": productName,
+    }
+  });
+}
+
 const validatePhoneNumber = phone_number => {
   // const regex = /^[+]*[(]{0,1}[0-9]{1,3}[)]{0,1}[-\s\./0-9]*$/g;
   const regex = /^\+[1-9]\d{1,14}$/;
@@ -74,4 +93,5 @@ module.exports = {
   validateEmail,
   trim,
   sendRegistrationEmail,
+  sendMovies,
 }
