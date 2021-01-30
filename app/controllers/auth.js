@@ -144,6 +144,61 @@ const routes = (app) => {
   });
   // verify email token end
 
+  // resend code start
+  app.post(PREFIX+'/resend-code', async function(req, res) {
+
+    let fullName = trim(req.body.fullName);
+    let email = trim(req.body.email);
+    let hash = Math.floor(Math.random()*90000) + 10000;
+
+    sendRegistrationEmail(email, fullName, hash);
+    return res.status(200).json({
+      status: 200,
+      message: "worked"
+    });
+
+  });
+  // resend code end
+
+  // get user details start
+  app.post(PREFIX+'/get-user-details', async function(req, res) {
+
+    let email = trim(req.body.email);
+
+    let getUserDetailsQuery = "SELECT `id`, `fullname`, `email` FROM users WHERE `email` = ?";
+    let getUserDetails;
+    try{
+      [getUserDetails] = await db.execute(getUserDetailsQuery, [ email ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (getUserDetails.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "Failed to get user details"
+      });
+    }
+
+    let fullName = getUserDetails[0].fullname;
+    let emailBack = getUserDetails[0].email;
+    let receiver = [];
+    receiver.push(fullName);
+    receiver.push(emailBack);
+
+    return res.status(200).json({
+      status: 200,
+      message: "worked",
+      data: receiver
+    });
+
+  });
+  // get user details end
+
   // register users start
   app.post(PREFIX + '/register', async function(req, res){
 
@@ -212,8 +267,7 @@ const routes = (app) => {
       });
     }
 
-    let action_url = Constants.CLIENT_APP_URL + "/email-verification/code/" + hash
-    // sendRegistrationEmail(email, fullName, action_url);
+    sendRegistrationEmail(email, fullName, hash);
     return res.status(200).json({
       status: 200,
       message: "worked"

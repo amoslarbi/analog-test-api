@@ -3,72 +3,34 @@ const axios = require("axios");
 const { v4: uuidv4 } = require('uuid');
 var postmark = require("postmark");
 var fromEmail = "hello@oballot.com";
-var productUrl = "https://oballot.com";
-var supportEmail = "hello@oballot.com";
-var productName = "oBallot";
-var companyAddress = "Amrahia, R40, Adenta-Dodowa Road, Accra, Ghana";
-var senderName = "oBallot Team";
+var productUrl = "https://analogteams.com";
+var supportEmail = "hello@analogteams.com";
+var productName = "Analog Teams";
+var senderName = "Analog Teams";
 
 // Send an email:
 const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
-const sendRegistrationEmail = (to_email, name, link) => {
+const sendRegistrationEmail = (to_email, name, code) => {
     client.sendEmailWithTemplate({
       "From": fromEmail,
       "To": to_email,
-      "TemplateAlias": "accountActivationEmail",
+      "TemplateAlias": "accountActivationEmail-1",
       "TemplateModel": {
         "product_url": productUrl,
         "name": name,
-        "action_url": link,
+        "code": code,
         "support_email": supportEmail,
         "sender_name": senderName,
         "product_name": productName,
         "company_name": productName,
-        "company_address": companyAddress
       }
     });
-}
-
-const sendWelcomeEmail = (to_email, name, link) => {
-  client.sendEmailWithTemplate({
-    "From": fromEmail,
-    "To": to_email,
-    "TemplateAlias": "welcomeEmail",
-    "TemplateModel": {
-      "product_url": productUrl,
-      "name": name,
-      "action_url": link,
-      "support_email": supportEmail,
-      "sender_name": senderName,
-      "product_name": productName,
-      "company_name": productName,
-      "company_address": companyAddress
-    }
-  });
-}
-
-const sendPasswordResetEmail = (to_email, name, link) => {
-  client.sendEmailWithTemplate({
-    "From": fromEmail,
-    "To": to_email,
-    "TemplateAlias": "passwordResetEmail",
-    "TemplateModel": {
-      "product_url": productUrl,
-      "name": name,
-      "product_name": productName,
-      "action_url": link,
-      "support_url": productUrl,
-      "company_name": productName,
-      "company_address": companyAddress
-    }
-  });
 }
 
 const validatePhoneNumber = phone_number => {
   // const regex = /^[+]*[(]{0,1}[0-9]{1,3}[)]{0,1}[-\s\./0-9]*$/g;
   const regex = /^\+[1-9]\d{1,14}$/;
-
   return regex.test(trim(phone_number));
 };
 
@@ -103,41 +65,6 @@ const validateEmail = email => {
   return regex.test(String(trim(email)).toLowerCase());
 };
 
-const sendMessageToTelegram = (type, message) => {
-  let chatID;
-  switch (type) {
-    case 'bug':
-    chatID = '-377867783';
-    break;
-
-    case 'alert':
-    chatID = '-299530326';
-    break;
-  
-    default:
-    chatID = '-384456761';
-    break;
-  }
-
-  axios.get("https://api.telegram.org/bot" +
-    process.env.TELEGRAM_BOT_API_KEY+
-    "/sendMessage?chat_id=" +
-    chatID +
-    "&text=" +
-    message +
-    ""
-  ).then((data) => {
-    console.log("Telegram message sent")
-  },
-    function (err) {
-      console.log("Error sending telegram message")
-      console.dir(err)
-    }
-  );
-
-}
-
-
 module.exports = {
   validatePhoneNumber,
   validatePassword,
@@ -145,9 +72,6 @@ module.exports = {
   hashPassword,
   validateWholeNumber,
   validateEmail,
-  sendMessageToTelegram,
   trim,
   sendRegistrationEmail,
-  sendWelcomeEmail,
-  sendPasswordResetEmail
 }
