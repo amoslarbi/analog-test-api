@@ -10,8 +10,7 @@ const {
   hashPassword,
   sendMessageToTelegram,
   sendRegistrationEmail,
-  sendWelcomeEmail,
-  sendPasswordResetEmail
+  sendMovies,
 } = require('../utilities/utilities');
 const Constants = require('../misc/api-constants');
 const axios = require('axios')
@@ -164,27 +163,64 @@ const routes = (app) => {
   // the movie db request start
   app.get(PREFIX+'/the-movie-db-request', async function(req, res) {
 
-    const TMDB_API_BASE_URL = "https://api.themoviedb.org/3/movie";
-    const TMDB_RANDOM = Math.floor(Math.random() * 6) + 1;
-    const TMDB_API_KEY = "77ca42839ed6c6456a94889d026c6d1a";
+    let getAllEmailsQuery = "SELECT `email` FROM users";
+    let getAllEmails;
+    try{
+      [getAllEmails] = await db.execute(getAllEmailsQuery);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return {
+        status: 500,
+        message: 'Could not connect to server'
+      };
+    }
 
-    const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+      for(let i = 0; i < getAllEmails.length; i++){
+        console.log(getAllEmails[i].email);
 
-    axios.get(TMDB_API_BASE_URL + "/" + TMDB_RANDOM + "?api_key=" + TMDB_API_KEY)
-    .then((response) => {
+        const TMDB_API_BASE_URL = "https://api.themoviedb.org/3/movie";
+        const TMDB_RANDOM = Math.floor(Math.random() * 6) + 1;
+        const TMDB_API_KEY = "77ca42839ed6c6456a94889d026c6d1a";
 
-      console.log(response.data.title);
-      let image = TMDB_IMAGE_BASE_URL + response.data.poster_path;
-      let title = TMDB_IMAGE_BASE_URL + response.data.title;
-      let vote_average = TMDB_IMAGE_BASE_URL + response.data.vote_average + "/10 IMDB";
-      let overview = TMDB_IMAGE_BASE_URL + response.data.overview;
+        const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-      sendMovies("larbiamos18@gmail.com", image, title, vote_average, overview);
+        axios.get(TMDB_API_BASE_URL + "/" + TMDB_RANDOM + "?api_key=" + TMDB_API_KEY)
+        .then((response) => {
 
-    }).catch((error) => {
+          console.log(response.data.title);
+          let image = TMDB_IMAGE_BASE_URL + response.data.poster_path;
+          let title = response.data.title;
+          let vote_average = response.data.vote_average + "/10 IMDB";
+          let overview = response.data.overview;
 
-      
-    });
+          sendMovies(getAllEmails[i].email, image, title, vote_average, overview);
+
+        }).catch((error) => {
+
+        });
+
+      }
+
+    // const TMDB_API_BASE_URL = "https://api.themoviedb.org/3/movie";
+    // const TMDB_RANDOM = Math.floor(Math.random() * 6) + 1;
+    // const TMDB_API_KEY = "77ca42839ed6c6456a94889d026c6d1a";
+
+    // const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
+    // axios.get(TMDB_API_BASE_URL + "/" + TMDB_RANDOM + "?api_key=" + TMDB_API_KEY)
+    // .then((response) => {
+
+    //   console.log(response.data.title);
+    //   let image = TMDB_IMAGE_BASE_URL + response.data.poster_path;
+    //   let title = response.data.title;
+    //   let vote_average = response.data.vote_average + "/10 IMDB";
+    //   let overview = response.data.overview;
+
+    //   sendMovies("larbiamos18@gmail.com", image, title, vote_average, overview);
+
+    // }).catch((error) => {
+
+    // });
 
   });
   // the movie db request end
