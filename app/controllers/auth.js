@@ -226,6 +226,92 @@ const routes = (app) => {
   // the movie db request end
 
   // get user details start
+  app.post(PREFIX+'/unsubscribe', async function(req, res) {
+
+    let email = trim(req.body.email);
+    console.log(email);
+
+    let getUserDetailsQuery = "DELETE FROM users WHERE `email` = ?";
+    let getUserDetails;
+    try{
+      [getUserDetails] = await db.execute(getUserDetailsQuery, [ email ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (getUserDetails.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "Failed to get user details"
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "worked",
+    });
+
+  });
+  // get user details end
+
+  // login start
+  app.post(PREFIX+'/login', async function(req, res) {
+
+    let email = trim(req.body.email);
+    let password = trim(req.body.password);
+    console.log(email);
+
+    if(email.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Enter email"
+      });
+    }else if(!validateEmail(email)){
+      return res.status(400).json({
+        status: 400,
+        message: "Enter email"
+      });
+    }
+
+    if(password.length === 0){
+      return res.status(400).json({
+        status: 400,
+        message: "Enter password"
+      });
+    }
+
+    let muchQuery = "DELETE FROM users WHERE `email` = ? AND `email_verification_status` = true";
+    let much;
+    try{
+      [getUserDetails] = await db.execute(muchQuery, [ email ]);
+    }catch(error){
+      console.log('SQL-Error: '+error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Could not connect to server'
+      });
+    }
+
+    if (much.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "Failed to get user details"
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "worked",
+    });
+
+  });
+  // login end
+
+  // get user details start
   app.post(PREFIX+'/get-user-details', async function(req, res) {
 
     let email = trim(req.body.email);
@@ -249,11 +335,15 @@ const routes = (app) => {
       });
     }
 
-    let fullName = getUserDetails[0].fullname;
+    let fullNamee = getUserDetails[0].fullname;
+    let fullNameee = getUserDetails[0].fullname;
     let emailBack = getUserDetails[0].email;
     let receiver = [];
+    let ress = fullNamee.split('');
+    let fullName = ress[0];
     receiver.push(fullName);
     receiver.push(emailBack);
+    receiver.push(fullNameee);
 
     return res.status(200).json({
       status: 200,
