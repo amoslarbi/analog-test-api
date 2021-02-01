@@ -25,6 +25,8 @@ const routes = (app) => {
     let email = req.body.email;
     let password = req.body.password;
 
+    console.log(email);
+
     if(email.length === 0){
       return res.status(400).json({
         status: 400,
@@ -44,10 +46,10 @@ const routes = (app) => {
       });
     }
 
-    let loginQuery = "SELECT * FROM `users` WHERE `email` = ?";
+    let loginQuery = "SELECT * FROM `users` WHERE `email` = ? AND `email_verification_status` = ?";
     let checkLoginQuery;
     try{
-      [checkLoginQuery] = await db.execute(loginQuery, [ email ]);
+      [checkLoginQuery] = await db.execute(loginQuery, [ email, 1 ]);
     }catch(error){
       console.log('SQL-Error: '+error);
       sendMessageToTelegram('bug', 'SQL-Error: '+error+'--'+loginQuery);
@@ -74,7 +76,8 @@ const routes = (app) => {
 
     //jwt start
     let uuid = checkLoginQuery[0].uuid;
-    let fullName = checkLoginQuery[0].fullname;
+    let fullname = checkLoginQuery[0].fullname;
+    let emaill = checkLoginQuery[0].email;
     let email_verification_status = checkLoginQuery[0].email_verification_status;
     const access_data = {
       uuid: uuid
@@ -82,20 +85,20 @@ const routes = (app) => {
 
     const jwt_access_token = jwt.sign({access_data}, process.env.JWT_KEY, { expiresIn: '30d' })
 
+    let receiver = [];
+    receiver.push(fullname);
+    receiver.push(emaill);
+
     return res.status(200).json({
       status: 200,
-      user_obj: {
-        fullName: fullName,
-        email: email,
-        emailVerificationStatus: email_verification_status
-      },
+      data: receiver,
       access_token: jwt_access_token
     })
 
   });
 
   // verify email token start
-  app.post(PREFIX+'/verify-token', async function(req, res) {
+  app.post(PREFIX+'/confirmEmail', async function(req, res) {
 
     let token = trim(req.body.code);
 
@@ -225,7 +228,7 @@ const routes = (app) => {
   });
   // the movie db request end
 
-  // get user details start
+  // unsubscribe start
   app.post(PREFIX+'/unsubscribe', async function(req, res) {
 
     let email = trim(req.body.email);
@@ -256,7 +259,7 @@ const routes = (app) => {
     });
 
   });
-  // get user details end
+  // unsubscribe end
 
   // login start
   app.post(PREFIX+'/login', async function(req, res) {
