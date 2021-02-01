@@ -46,10 +46,10 @@ const routes = (app) => {
       });
     }
 
-    let loginQuery = "SELECT * FROM `users` WHERE `email` = ? AND `email_verification_status` = ?";
+    let loginQuery = "SELECT * FROM `users` WHERE `email` = ? AND `email_verification_status` = 1";
     let checkLoginQuery;
     try{
-      [checkLoginQuery] = await db.execute(loginQuery, [ email, 1 ]);
+      [checkLoginQuery] = await db.execute(loginQuery, [ email ]);
     }catch(error){
       console.log('SQL-Error: '+error);
       return res.status(500).json({
